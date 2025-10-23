@@ -2,15 +2,20 @@ package com.example.smallbasket
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityProfileBinding
+import com.example.smallbasket.repository.OrderRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
 
 class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
     private lateinit var auth: FirebaseAuth
+    private val repository = OrderRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,17 +25,14 @@ class ProfileActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         val user = auth.currentUser
 
-        // Set name and email
         binding.tvProfileName.text = user?.displayName ?: "User"
         binding.tvProfileEmail.text = user?.email ?: "No email"
 
-        // Set joining date
         user?.metadata?.creationTimestamp?.let { timestamp ->
             binding.tvJoiningDate.text =
                 "Joined: ${java.text.SimpleDateFormat("MMM yyyy").format(java.util.Date(timestamp))}"
         }
 
-        // Fetch mobile number from Firebase Realtime Database
         val userId = user?.uid
         val database = FirebaseDatabase.getInstance().reference
         if (userId != null) {
@@ -42,10 +44,32 @@ class ProfileActivity : AppCompatActivity() {
                 .addOnFailureListener {
                     binding.tvProfileMobile.text = "Mobile: Not available"
                 }
+
+            // Load user stats from backend
+            loadUserStats(userId)
         }
 
-        // Menu options
         binding.menuIcon.setOnClickListener { showMenu() }
+    }
+
+    private fun loadUserStats(userId: String) {
+        lifecycleScope.launch {
+            val result = repository.getUserStats(userId)
+
+            result.onSuccess { stats ->
+                // You can display these stats in your profile UI
+                // For now, showing as a toast
+                Toast.makeText(
+                    this@ProfileActivity,
+                    "Orders: ${stats.totalOrders} | Deliveries: ${stats.completedDeliveries}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+
+            result.onFailure { error ->
+                // Silently fail or show error
+            }
+        }
     }
 
     private fun showMenu() {
