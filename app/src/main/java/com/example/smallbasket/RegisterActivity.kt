@@ -5,15 +5,21 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityRegisterBinding
+import com.example.smallbasket.repository.OrderRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class RegisterActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRegisterBinding
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+    private val repository = OrderRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,42 +54,71 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Create Firebase Auth User
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val user = auth.currentUser
-                        val profileUpdates = userProfileChangeRequest {
-                            displayName = name
-                        }
-                        user?.updateProfile(profileUpdates)
+            // Disable button during registration
+            binding.btnSignUp.isEnabled = false
+            binding.btnSignUp.text = "Creating Account..."
 
-                        // Push extra info to Firebase Database
-                        val userId = user?.uid ?: ""
-                        val database = FirebaseDatabase.getInstance().reference
-                        val userData = mapOf(
-                            "name" to name,
-                            "email" to email,
-                            "mobile" to mobile
-                        )
-                        database.child("users").child(userId).setValue(userData)
-                            .addOnSuccessListener {
-                                Toast.makeText(
-                                    this@RegisterActivity,
-                                    "Account Created Successfully!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                startActivity(Intent(this, LoginActivity::class.java))
-                                finish()
-                            }
-                            .addOnFailureListener { e ->
-                                Toast.makeText(this, "Failed to save data: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-                            }
+            createAccount(name, email, password, mobile)
+        }
+    }
+
+    private fun createAccount(name: String, email: String, password: String, mobile: String) {
+        lifecycleScope.launch {
+            try {
+                // Step 1: Create Firebase Auth User
+                val result = auth.createUserWithEmailAndPassword(email, password).await()
+                val user = result.user
+
+                if (user != null) {
+                    // Step 2: Update display name
+                    val profileUpdates = userProfileChangeRequest {
+                        displayName = name
                     }
+                    user.updateProfile(profileUpdates).await()
+
+                    // Step 3: Send email verification
+                    user.sendEmailVerification().await()
+
+                    // Step 4: Store user data in Firestore (matching backend structure)
+                    val userData = hashMapOf(
+                        "uid" to user.uid,
+                        "email" to email,
+                        "name" to name,
+                        "phone" to mobile,
+                        "email_verified" to false,
+                        "created_at" to com.google.firebase.Timestamp.now(),
+                        "last_login" to com.google.firebase.Timestamp.now()
+                    )
+
+                    firestore.collection("users")
+                        .document(user.uid)
+                        .set(userData)
+                        .await()
+
+                    Toast.makeText(
+                        this@RegisterActivity,
+                        "Account created! Please verify your email before logging in.",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    // Sign out user until they verify email
+                    auth.signOut()
+
+                    startActivity(Intent(this@RegisterActivity, LoginActivity::class.java))
+                    finish()
+                } else {
+                    throw Exception("User creation failed")
                 }
-                .addOnFailureListener { e ->
-                    Toast.makeText(this@RegisterActivity, e.localizedMessage, Toast.LENGTH_SHORT).show()
-                }
+
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@RegisterActivity,
+                    "Registration failed: ${e.localizedMessage}",
+                    Toast.LENGTH_LONG
+                ).show()
+                binding.btnSignUp.isEnabled = true
+                binding.btnSignUp.text = "Create Account"
+            }
         }
     }
 }
