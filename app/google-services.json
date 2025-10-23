@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "856696663365",
-    "project_id": "small-basket-2025",
-    "storage_bucket": "small-basket-2025.firebasestorage.app"
+    "project_number": "803487170721",
+    "project_id": "qwerty-16f78",
+    "storage_bucket": "qwerty-16f78.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:856696663365:android:a133e3eb109ce8322ca22c",
+        "mobilesdk_app_id": "1:803487170721:android:5baff45427f84d847a30e0",
         "android_client_info": {
           "package_name": "com.example.smallbasket"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDAgZ8Cv50dFHqSBnguiPCljq32FIR2bUE"
+          "current_key": "AIzaSyDGApJ78HxJbQHziajb7u7my5ubnPKYxxI"
         }
       ],
       "services": {
