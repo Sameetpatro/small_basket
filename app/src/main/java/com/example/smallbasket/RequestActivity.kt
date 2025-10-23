@@ -25,9 +25,7 @@ class RequestActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.recyclerRequests)
         recyclerView.layoutManager = LinearLayoutManager(this)
-
-        // Add ProgressBar to your layout
-        progressBar = findViewById(R.id.progress_bar) // You'll need to add this to XML
+        progressBar = findViewById(R.id.progress_bar)
 
         loadAvailableOrders()
     }
@@ -36,7 +34,8 @@ class RequestActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
-            val result = repository.getAllOrders(status = "pending")
+            // Use "open" status instead of "pending"
+            val result = repository.getAllOrders(status = "open")
 
             result.onSuccess { orders ->
                 progressBar.visibility = View.GONE

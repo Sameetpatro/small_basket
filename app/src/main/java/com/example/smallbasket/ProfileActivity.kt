@@ -46,28 +46,32 @@ class ProfileActivity : AppCompatActivity() {
                 }
 
             // Load user stats from backend
-            loadUserStats(userId)
+            loadUserStats()
         }
 
         binding.menuIcon.setOnClickListener { showMenu() }
     }
 
-    private fun loadUserStats(userId: String) {
+    private fun loadUserStats() {
         lifecycleScope.launch {
-            val result = repository.getUserStats(userId)
+            val result = repository.getUserStats("")
 
             result.onSuccess { stats ->
-                // You can display these stats in your profile UI
-                // For now, showing as a toast
+                // Display stats in UI
+                val statsText = "Orders: ${stats.totalOrders} | Active: ${stats.activeOrders} | Completed: ${stats.completedDeliveries}"
                 Toast.makeText(
                     this@ProfileActivity,
-                    "Orders: ${stats.totalOrders} | Deliveries: ${stats.completedDeliveries}",
+                    statsText,
                     Toast.LENGTH_SHORT
                 ).show()
+
+                // You can update UI elements here
+                // Example: binding.tvStats.text = statsText
             }
 
             result.onFailure { error ->
-                // Silently fail or show error
+                // Silently fail or show minimal error
+                println("Stats error: ${error.message}")
             }
         }
     }

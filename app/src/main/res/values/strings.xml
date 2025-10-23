@@ -11,24 +11,26 @@
     <string name="password">Password</string>
     <string name="create_account">Create Account</string>
     <string name="clientID">xyz</string>
+
+    <!-- Updated to match backend areas.py PREDEFINED_AREAS -->
     <string-array name="location_areas">
         <item>Select Location Area</item>
+        <item>SBIT</item>
+        <item>CECT</item>
         <item>Pallri</item>
-        <item>Sbit</item>
         <item>Bahalgarh</item>
-        <item>Sonipat</item>
-        <item>Delhi</item>
+        <item>Sonepat</item>
         <item>TDI</item>
-        <item>Supermax</item>
+        <item>Lakegroove</item>
+        <item>KingsBurry</item>
+        <item>SuperMax</item>
     </string-array>
 
-    <!-- Array for Best Before and Deadline Spinners -->
     <string-array name="time_presets">
         <item>Select Time Preset</item>
         <item>30 min</item>
         <item>1 hr</item>
         <item>2 hr</item>
-        <!-- This option indicates the user will input a custom time later -->
         <item>Custom (Hrs &amp; Mins)</item>
     </string-array>
 

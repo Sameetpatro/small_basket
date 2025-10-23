@@ -22,16 +22,17 @@ class DeliveryConfimationActivity : AppCompatActivity() {
         orderId = intent.getStringExtra("order_id") ?: ""
         val title = intent.getStringExtra("title") ?: "Order"
 
-        // Add UI elements to your layout
         findViewById<TextView>(R.id.tvConfirmationTitle)?.text =
             "Delivery Accepted: $title"
 
         findViewById<Button>(R.id.btnMarkPickedUp)?.setOnClickListener {
-            updateOrderStatus("picked_up")
+            // Backend doesn't have picked_up status, so we just show feedback
+            Toast.makeText(this, "Order marked as picked up!", Toast.LENGTH_SHORT).show()
         }
 
         findViewById<Button>(R.id.btnMarkDelivered)?.setOnClickListener {
-            updateOrderStatus("delivered")
+            // Use "completed" status for backend
+            updateOrderStatus("completed")
         }
 
         findViewById<Button>(R.id.btnBackToHome)?.setOnClickListener {
@@ -46,13 +47,12 @@ class DeliveryConfimationActivity : AppCompatActivity() {
 
             result.onSuccess { order ->
                 val message = when(status) {
-                    "picked_up" -> "Order marked as picked up!"
-                    "delivered" -> "Order marked as delivered!"
+                    "completed" -> "Order marked as delivered!"
                     else -> "Status updated!"
                 }
                 Toast.makeText(this@DeliveryConfimationActivity, message, Toast.LENGTH_SHORT).show()
 
-                if (status == "delivered") {
+                if (status == "completed") {
                     startActivity(Intent(this@DeliveryConfimationActivity, Homepage::class.java))
                     finish()
                 }

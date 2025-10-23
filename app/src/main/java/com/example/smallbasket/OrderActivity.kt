@@ -15,6 +15,8 @@ import com.example.smallbasket.models.CreateOrderRequest
 import com.example.smallbasket.repository.OrderRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 class OrderActivity : AppCompatActivity() {
 
@@ -115,30 +117,57 @@ class OrderActivity : AppCompatActivity() {
             val bestBeforeTime = binding.etBestBeforeTime.text.toString().trim()
             val deadlineTime = binding.etDeadlineTime.text.toString().trim()
             val notes = binding.etNote.text.toString().trim()
-            val priority = if (binding.swPriority.isChecked) "emergency" else "normal"
+            val priority = binding.swPriority.isChecked
 
-            if (pickupArea.isEmpty() || dropArea.isEmpty() || bestBeforeTime.isEmpty() || deadlineTime.isEmpty()) {
+            if (pickupArea.isEmpty() || pickupArea == "Select Location Area" ||
+                dropArea.isEmpty() || dropArea == "Select Location Area" ||
+                bestBeforeTime.isEmpty() || deadlineTime.isEmpty()) {
                 Toast.makeText(this, "Please fill all required fields!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val userId = auth.currentUser?.uid ?: ""
+            // Convert time format to ISO 8601
+            val timeRequested = convertToISO8601(bestBeforeTime)
+            val deadline = convertToISO8601(deadlineTime)
 
             val orderRequest = CreateOrderRequest(
-                userId = userId,
-                items = itemList,
+                item = itemList,
                 pickupLocation = pickupSpecific,
                 pickupArea = pickupArea,
                 dropLocation = dropSpecific,
                 dropArea = dropArea,
-                rewardPercentage = 10.0,
-                bestBefore = bestBeforeTime,
-                deadline = deadlineTime,
+                reward = 10.0,
+                timeRequested = timeRequested,
+                deadline = deadline,
                 priority = priority,
                 notes = notes.ifEmpty { null }
             )
 
             createOrder(orderRequest, itemList)
+        }
+    }
+
+    private fun convertToISO8601(timeString: String): String {
+        return try {
+            // Parse "DD day : HH hr : MM min" format
+            val parts = timeString.split(":")
+            if (parts.size == 3) {
+                val days = parts[0].trim().split(" ")[0].toInt()
+                val hours = parts[1].trim().split(" ")[0].toInt()
+                val minutes = parts[2].trim().split(" ")[0].toInt()
+
+                val calendar = Calendar.getInstance()
+                calendar.add(Calendar.DAY_OF_YEAR, days)
+                calendar.add(Calendar.HOUR_OF_DAY, hours)
+                calendar.add(Calendar.MINUTE, minutes)
+
+                val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+                sdf.timeZone = TimeZone.getTimeZone("UTC")
+                return sdf.format(calendar.time)
+            }
+            timeString
+        } catch (e: Exception) {
+            timeString
         }
     }
 

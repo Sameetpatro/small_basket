@@ -6,42 +6,76 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    // Order Endpoints
-    @POST("orders/")
-    suspend fun createOrder(@Body request: CreateOrderRequest): Response<ApiResponse<Order>>
+    // ============================================
+    // REQUEST ENDPOINTS (Phase 3 Backend)
+    // ============================================
 
-    @GET("orders/")
+    @POST("request/create")
+    suspend fun createOrder(@Body request: CreateOrderRequest): Response<Order>
+
+    @GET("request/all")
     suspend fun getAllOrders(
         @Query("status") status: String? = null,
-        @Query("area") area: String? = null
-    ): Response<ApiResponse<List<Order>>>
+        @Query("pickup_area") pickupArea: String? = null,
+        @Query("drop_area") dropArea: String? = null
+    ): Response<List<Order>>
 
-    @GET("orders/{order_id}")
-    suspend fun getOrder(@Path("order_id") orderId: String): Response<ApiResponse<Order>>
+    @GET("request/mine")
+    suspend fun getUserOrders(): Response<List<Order>>
 
-    @GET("orders/user/{user_id}")
-    suspend fun getUserOrders(@Path("user_id") userId: String): Response<ApiResponse<List<Order>>>
+    @GET("request/accepted")
+    suspend fun getAcceptedOrders(): Response<List<Order>>
 
-    @POST("orders/{order_id}/accept")
-    suspend fun acceptOrder(
-        @Path("order_id") orderId: String,
-        @Body request: AcceptOrderRequest
-    ): Response<ApiResponse<Order>>
+    @GET("request/status/{request_id}")
+    suspend fun getOrder(@Path("request_id") orderId: String): Response<Order>
 
-    @PATCH("orders/{order_id}/status")
-    suspend fun updateOrderStatus(
-        @Path("order_id") orderId: String,
-        @Body request: UpdateOrderStatusRequest
-    ): Response<ApiResponse<Order>>
+    @POST("request/accept")
+    suspend fun acceptOrder(@Body request: AcceptOrderRequest): Response<Order>
 
-    @DELETE("orders/{order_id}")
-    suspend fun cancelOrder(@Path("order_id") orderId: String): Response<ApiResponse<String>>
+    @POST("request/update-status")
+    suspend fun updateOrderStatus(@Body request: UpdateOrderStatusRequest): Response<Order>
 
-    // User Stats
-    @GET("users/{user_id}/stats")
-    suspend fun getUserStats(@Path("user_id") userId: String): Response<ApiResponse<UserStats>>
+    // ============================================
+    // USER ENDPOINTS
+    // ============================================
 
-    // Health Check
-    @GET("health")
-    suspend fun healthCheck(): Response<Map<String, String>>
+    @GET("user/stats")
+    suspend fun getUserStats(): Response<RequestStatsResponse>
+
+    @GET("user/profile")
+    suspend fun getUserProfile(): Response<UserProfileResponse>
+
+    // ============================================
+    // CONNECTIVITY ENDPOINTS
+    // ============================================
+
+    @POST("user/connectivity/update")
+    suspend fun updateConnectivity(@Body request: ConnectivityUpdateRequest): Response<SuccessResponse>
+
+    // ============================================
+    // AREA ENDPOINTS
+    // ============================================
+
+    @GET("areas/list")
+    suspend fun getAvailableAreas(): Response<AreasListResponse>
+
+    @PUT("user/preferred-areas")
+    suspend fun setPreferredAreas(@Body request: PreferredAreasRequest): Response<SuccessResponse>
+
+    // ============================================
+    // NOTIFICATION ENDPOINTS
+    // ============================================
+
+    @POST("notifications/register")
+    suspend fun registerFCMToken(@Body request: FCMTokenRequest): Response<SuccessResponse>
+
+    @DELETE("notifications/unregister")
+    suspend fun unregisterFCMToken(): Response<SuccessResponse>
+
+    // ============================================
+    // HEALTH CHECK
+    // ============================================
+
+    @GET("/")
+    suspend fun healthCheck(): Response<Map<String, Any>>
 }
