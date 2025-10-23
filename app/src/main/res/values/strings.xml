@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">Small Basket</string>
+    <string name="no_data">Not Signed In</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="register">Register</string>
+    <string name="login">Login</string>
+    <string name="dont_have_account">Don\'t Have An Account?</string>
+    <string name="already_have_account">Already Have An Account?</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="create_account">Create Account</string>
+    <string name="clientID">xyz</string>
+    <string-array name="location_areas">
+        <item>Select Location Area</item>
+        <item>Pallri</item>
+        <item>Sbit</item>
+        <item>Bahalgarh</item>
+        <item>Sonipat</item>
+        <item>Delhi</item>
+        <item>TDI</item>
+        <item>Supermax</item>
+    </string-array>
+
+    <!-- Array for Best Before and Deadline Spinners -->
+    <string-array name="time_presets">
+        <item>Select Time Preset</item>
+        <item>30 min</item>
+        <item>1 hr</item>
+        <item>2 hr</item>
+        <!-- This option indicates the user will input a custom time later -->
+        <item>Custom (Hrs &amp; Mins)</item>
+    </string-array>
+
+</resources>

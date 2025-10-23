@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="tvOnlineUsers" type="id" />
+    <item name="onlineUsersCard" type="id" />
+    <item name="menuIcon" type="id" />
+    <item name="profileCard" type="id" />
+    <item name="avatarImage" type="id" />
+    <item name="tvProfileName" type="id" />
+    <item name="tvProfileEmail" type="id" />
+    <item name="tvJoiningDate" type="id" />
+    <item name="ordersHeader" type="id" />
+    <item name="ordersTabLayout" type="id" />
+    <item name="ordersViewPager" type="id" />
+</resources>

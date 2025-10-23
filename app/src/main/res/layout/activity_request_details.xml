@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFF3E0"
+    tools:context=".RequestDetailActivity">
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="#FFD54F"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_shopping_cart"
+            android:contentDescription="Small Basket App Logo"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Request Details"
+            android:textColor="#000"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Scrollable content -->
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/headerLayout"
+        app:layout_constraintBottom_toTopOf="@id/buttonLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
+
+            <!-- Item Title -->
+            <TextView
+                android:id="@+id/tvItemTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Item title will appear here dynamically"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="#333333"
+                android:gravity="center"
+                android:padding="16dp"
+                android:background="@drawable/bg_header_thanks"
+                android:layout_marginBottom="12dp"
+                android:ellipsize="none"
+                android:singleLine="false"
+                android:breakStrategy="simple"
+                android:lineSpacingExtra="4dp"
+                android:elevation="4dp" />
+
+            <!-- Priority / Importance -->
+            <LinearLayout
+                android:id="@+id/priorityContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="16dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <TextView
+                    android:id="@+id/tvPriorityLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Priority:"
+                    android:textSize="15sp"
+                    android:textColor="#444"
+                    android:textStyle="bold"
+                    android:layout_marginEnd="8dp" />
+
+                <!-- Status chip-like view (change text at runtime to "Important" or "Normal") -->
+                <TextView
+                    android:id="@+id/tvPriority"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Normal"
+                    android:textSize="14sp"
+                    android:textColor="#000"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp"
+                    android:background="#FFE0B2"
+                    android:layout_marginEnd="8dp" />
+            </LinearLayout>
+
+            <!-- Pickup Info -->
+            <TextView
+                android:id="@+id/tvPickup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pickup Location: Market Area"
+                android:textSize="16sp"
+                android:textColor="#444"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvSpecificPickup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Specific Pickup: Block 5, Near Gate"
+                android:textSize="15sp"
+                android:textColor="#555"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Drop Info -->
+            <TextView
+                android:id="@+id/tvDrop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Drop Location: Hostel A"
+                android:textSize="16sp"
+                android:textColor="#444"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvSpecificDrop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Specific Drop: Room 102, 1st Floor"
+                android:textSize="15sp"
+                android:textColor="#555"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Reward -->
+            <TextView
+                android:id="@+id/tvReward"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Reward: 10%"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FF9800"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/tvImportance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Importance Status"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#000"
+                android:layout_marginBottom="12dp" />
+
+
+            <!-- Time Details -->
+            <TextView
+                android:id="@+id/tvBestBefore"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Best Before: 6:00 PM"
+                android:textSize="15sp"
+                android:textColor="#444"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvDeadline"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Deadline: 7:30 PM"
+                android:textSize="15sp"
+                android:textColor="#444"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Notes -->
+            <TextView
+                android:id="@+id/tvNotesLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Additional Notes:"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="#000"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:id="@+id/tvNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Deliver carefully, items are fragile."
+                android:textSize="15sp"
+                android:textColor="#555"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Bottom Button Layout -->
+    <LinearLayout
+        android:id="@+id/buttonLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button
+            android:id="@+id/btnAcceptRequest"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Accept Request"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#FF9800"
+            android:textSize="16sp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnBackHome"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Back to Home"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#757575"
+            android:textSize="16sp"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
