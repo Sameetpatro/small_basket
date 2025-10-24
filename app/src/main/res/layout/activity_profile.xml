@@ -105,6 +105,45 @@
                     android:text="Joined: Oct 2024"
                     android:textColor="#9E9E9E"
                     android:textSize="12sp" />
+                <!-- Add this block right below tvJoiningDate inside your LinearLayout -->
+                <TextView
+                    android:id="@+id/tvBatch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvBranch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvSection"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvDasa"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="DASA Student"
+                    android:textColor="#E53935"
+                    android:textStyle="bold"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>

@@ -2,6 +2,7 @@ package com.example.smallbasket
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -12,6 +13,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.regex.Pattern
 
 class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
@@ -34,13 +38,18 @@ class ProfileActivity : AppCompatActivity() {
 
             user.metadata?.creationTimestamp?.let { timestamp ->
                 binding.tvJoiningDate.text =
-                    "Joined: ${java.text.SimpleDateFormat("MMM yyyy").format(java.util.Date(timestamp))}"
+                    "Joined: ${SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(Date(timestamp))}"
             }
 
             // Load phone number from Firestore
             loadUserDataFromFirestore(user.uid)
 
-            // Load user stats from backend
+            // 🔽 New: Decode student info from email and display
+            user.email?.let { email ->
+                parseEmailAndShowDetails(email)
+            }
+
+            // Load user stats
             loadUserStats()
         }
 
@@ -58,10 +67,8 @@ class ProfileActivity : AppCompatActivity() {
                 if (document.exists()) {
                     val phone = document.getString("phone") ?: "Not set"
                     val name = document.getString("name")
-
                     binding.tvProfileMobile.text = "Mobile: $phone"
 
-                    // Update name if available in Firestore
                     if (!name.isNullOrEmpty()) {
                         binding.tvProfileName.text = name
                     }
@@ -78,21 +85,12 @@ class ProfileActivity : AppCompatActivity() {
     private fun loadUserStats() {
         lifecycleScope.launch {
             val result = repository.getUserStats("")
-
             result.onSuccess { stats ->
-                val statsText = "Orders: ${stats.totalOrders} | Active: ${stats.activeOrders} | Completed: ${stats.completedDeliveries}"
-                Toast.makeText(
-                    this@ProfileActivity,
-                    statsText,
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                // You can update UI elements here if you add TextViews for stats
-                // Example: binding.tvStats.text = statsText
+                val statsText =
+                    "Orders: ${stats.totalOrders} | Active: ${stats.activeOrders} | Completed: ${stats.completedDeliveries}"
+                Toast.makeText(this@ProfileActivity, statsText, Toast.LENGTH_SHORT).show()
             }
-
             result.onFailure { error ->
-                // Silently fail or show minimal error
                 println("Stats error: ${error.message}")
             }
         }
@@ -116,5 +114,60 @@ class ProfileActivity : AppCompatActivity() {
             }
         }
         popup.show()
+    }
+
+    // 🔽 New Function: Parse and display student info from email
+    private fun parseEmailAndShowDetails(email: String) {
+        val username = email.substringBefore("@")
+        val pattern = Pattern.compile("(\\d{8})")
+        val matcher = pattern.matcher(username)
+        if (!matcher.find()) return
+
+        val digits = matcher.group(1) ?: return
+        if (digits.length != 8) return
+
+        val admissionDigit = digits[0]
+        val batchSuffix = digits.substring(1, 3)
+        val branchCode = digits.substring(3, 5)
+        val rollStr = digits.substring(5, 8)
+
+        val batchStartYear = 2000 + batchSuffix.toIntOrNull()!!
+        val rollNumber = rollStr.toIntOrNull() ?: 0
+
+        val branch = when (branchCode) {
+            "11" -> "Computer Science (CSE)"
+            "12" -> "Information Technology (IT)"
+            "13" -> "Data Science"
+            else -> "Unknown Branch"
+        }
+
+        val section =
+            if (branchCode == "11") { // only for CSE
+                if (rollNumber > 60) "B" else "A"
+            } else null
+
+        val isDasa = admissionDigit == '2'
+
+        // Update UI
+        binding.tvBatch.apply {
+            text = "Batch: $batchStartYear–${batchStartYear + 4}"
+            visibility = View.VISIBLE
+        }
+
+        binding.tvBranch.apply {
+            text = "Branch: $branch"
+            visibility = View.VISIBLE
+        }
+
+        section?.let {
+            binding.tvSection.text = "Section: $it"
+            binding.tvSection.visibility = View.VISIBLE
+        }
+
+        if (isDasa) {
+            binding.tvDasa.visibility = View.VISIBLE
+        } else {
+            binding.tvDasa.visibility = View.GONE
+        }
     }
 }
