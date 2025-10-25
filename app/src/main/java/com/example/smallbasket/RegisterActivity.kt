@@ -4,10 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityRegisterBinding
-import com.example.smallbasket.repository.OrderRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,7 +19,6 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var binding: ActivityRegisterBinding
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val firestore: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
-    private val repository = OrderRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +53,11 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Disable button during registration
+            if (password.length < 6) {
+                Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             binding.btnSignUp.isEnabled = false
             binding.btnSignUp.text = "Creating Account..."
 
@@ -65,21 +68,21 @@ class RegisterActivity : AppCompatActivity() {
     private fun createAccount(name: String, email: String, password: String, mobile: String) {
         lifecycleScope.launch {
             try {
-                // Step 1: Create Firebase Auth User
+                // Create Firebase Auth User
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val user = result.user
 
                 if (user != null) {
-                    // Step 2: Update display name
+                    // Update display name
                     val profileUpdates = userProfileChangeRequest {
                         displayName = name
                     }
                     user.updateProfile(profileUpdates).await()
 
-                    // Step 3: Send email verification
+                    // Send email verification
                     user.sendEmailVerification().await()
 
-                    // Step 4: Store user data in Firestore (matching backend structure)
+                    // Store user data in Firestore
                     val userData = hashMapOf(
                         "uid" to user.uid,
                         "email" to email,
@@ -95,30 +98,47 @@ class RegisterActivity : AppCompatActivity() {
                         .set(userData)
                         .await()
 
-                    Toast.makeText(
-                        this@RegisterActivity,
-                        "Account created! Please verify your email before logging in.",
-                        Toast.LENGTH_LONG
-                    ).show()
-
-                    // Sign out user until they verify email
+                    // Sign out until email is verified
                     auth.signOut()
 
-                    startActivity(Intent(this@RegisterActivity, LoginActivity::class.java))
-                    finish()
+                    // Show modern verification dialog
+                    showVerificationDialog(email)
+
                 } else {
                     throw Exception("User creation failed")
                 }
 
             } catch (e: Exception) {
-                Toast.makeText(
-                    this@RegisterActivity,
-                    "Registration failed: ${e.localizedMessage}",
-                    Toast.LENGTH_LONG
-                ).show()
+                val errorMessage = when {
+                    e.message?.contains("email address is already in use") == true ->
+                        "This email is already registered. Please login instead."
+                    e.message?.contains("network") == true ->
+                        "Network error. Please check your internet connection."
+                    e.message?.contains("weak-password") == true ->
+                        "Password is too weak. Use at least 6 characters."
+                    else -> "Registration failed: ${e.localizedMessage}"
+                }
+
+                Toast.makeText(this@RegisterActivity, errorMessage, Toast.LENGTH_LONG).show()
                 binding.btnSignUp.isEnabled = true
                 binding.btnSignUp.text = "Create Account"
             }
         }
+    }
+
+    private fun showVerificationDialog(email: String) {
+        AlertDialog.Builder(this)
+            .setTitle("✅ Account Created!")
+            .setMessage(
+                "A verification email has been sent to:\n\n$email\n\n" +
+                        "📧 Check your inbox and click the verification link\n\n" +
+                        "Once verified, come back and login immediately - no waiting required!"
+            )
+            .setPositiveButton("Go to Login") { _, _ ->
+                startActivity(Intent(this@RegisterActivity, LoginActivity::class.java))
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
 }
