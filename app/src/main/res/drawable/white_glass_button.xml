@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer glow - dark blue tint -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FF1A3C6E" /> <!-- dark blue glow -->
+            <corners android:radius="20dp" />
+        </shape>
+    </item>
+    <!-- Main dark blue glass button -->
+    <item
+        android:top="2dp"
+        android:left="2dp"
+        android:right="2dp"
+        android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#CC0D1E3B" /> <!-- semi-transparent dark blue -->
+            <stroke
+                android:width="1.5dp"
+                android:color="#80FFFFFF" />
+            <corners android:radius="18dp" />
+        </shape>
+    </item>
+    <!-- Inner subtle highlight for glass effect -->
+    <item
+        android:top="4dp"
+        android:left="4dp"
+        android:right="4dp"
+        android:bottom="24dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="#20FFFFFF"
+                android:endColor="#00FFFFFF"
+                android:type="linear" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</layer-list>

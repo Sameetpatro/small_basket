@@ -11,6 +11,11 @@
     <string name="password">Password</string>
     <string name="create_account">Create Account</string>
     <string name="clientID">xyz</string>
+    <string name="app_title">DOZO</string>
+    <string name="tagline">Tap it, Grab it, Done</string>
+    <string name="swipe_hint">Swipe up to continue</string>
+    <string name="get_started">Get Started</string>
+    <string name="logo">Logo</string>
 
     <!-- Updated to match backend areas.py PREDEFINED_AREAS -->
     <string-array name="location_areas">
