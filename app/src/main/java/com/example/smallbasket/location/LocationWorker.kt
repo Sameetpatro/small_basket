@@ -11,7 +11,6 @@ import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Tasks
-import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
 /**
@@ -34,11 +33,15 @@ class LocationWorker(
     private val repository = LocationRepository.getInstance(context)
 
     override suspend fun doWork(): Result {
+        Log.d(TAG, "LocationWorker started - checking tracking status")
+
+        // Check if tracking is enabled
         if (!repository.isTrackingEnabled()) {
             Log.d(TAG, "Tracking disabled, skipping")
             return Result.success()
         }
 
+        // Check permissions
         if (!LocationUtils.hasLocationPermission(applicationContext)) {
             Log.w(TAG, "No location permission, stopping work")
             return Result.failure()
@@ -50,10 +53,10 @@ class LocationWorker(
         }
 
         return try {
-            Log.d(TAG, "LocationWorker started")
             val startTime = System.currentTimeMillis()
+            Log.d(TAG, "Attempting to get location")
 
-            // Step 1: Check for cached location first (battery-free)
+            // Step 1: Try cached location first
             val cachedLocation = getCachedLocation()
             if (cachedLocation != null) {
                 Log.d(TAG, "Using cached location (${cachedLocation.accuracy}m accuracy)")
@@ -72,7 +75,7 @@ class LocationWorker(
                 return Result.success()
             }
 
-            // Step 2: No fresh cache, request new location with battery-optimized settings
+            // Step 2: Request fresh location
             Log.d(TAG, "No fresh cache, requesting new location")
             val freshLocation = requestFreshLocation()
 
@@ -94,6 +97,9 @@ class LocationWorker(
                 Result.retry()
             }
 
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception - missing permissions", e)
+            Result.failure()
         } catch (e: Exception) {
             Log.e(TAG, "Error in LocationWorker", e)
             Result.retry()
@@ -103,22 +109,35 @@ class LocationWorker(
     /**
      * Try to get cached location (battery-free)
      */
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    @Suppress("MissingPermission")
     private fun getCachedLocation(): Location? {
         return try {
             if (!LocationUtils.hasLocationPermission(applicationContext)) {
+                Log.w(TAG, "Missing location permission for cached location")
                 return null
             }
 
             val task = fusedLocationClient.lastLocation
-            val location = Tasks.await(task, LOCATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            val location = Tasks.await(task, 1000, TimeUnit.MILLISECONDS)
 
             // Check if cache is fresh enough
-            if (location != null && LocationUtils.isLocationFresh(location.time, CACHE_MAX_AGE_MS)) {
-                location
+            if (location != null) {
+                val age = System.currentTimeMillis() - location.time
+                Log.d(TAG, "Cached location age: ${age}ms")
+
+                if (LocationUtils.isLocationFresh(location.time, CACHE_MAX_AGE_MS)) {
+                    location
+                } else {
+                    Log.d(TAG, "Cached location too old")
+                    null
+                }
             } else {
+                Log.d(TAG, "No cached location available")
                 null
             }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception getting cached location", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error getting cached location", e)
             null
@@ -128,12 +147,15 @@ class LocationWorker(
     /**
      * Request fresh location with battery-optimized settings
      */
-    @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    @Suppress("MissingPermission")
     private suspend fun requestFreshLocation(): Location? {
         return try {
             if (!LocationUtils.hasLocationPermission(applicationContext)) {
+                Log.w(TAG, "Missing location permission for fresh location")
                 return null
             }
+
+            Log.d(TAG, "Requesting fresh location with balanced power")
 
             // Use BALANCED_POWER_ACCURACY for battery efficiency
             val request = CurrentLocationRequest.Builder()
@@ -149,10 +171,15 @@ class LocationWorker(
 
             if (location == null) {
                 Log.w(TAG, "Location request returned null")
+            } else {
+                Log.d(TAG, "Fresh location obtained: accuracy=${location.accuracy}m")
             }
 
             location
 
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception requesting fresh location", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error requesting fresh location", e)
             null

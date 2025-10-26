@@ -1,7 +1,3 @@
-// ============================================================================
-// PART 4: FOREGROUND LOCATION & PERMISSION MANAGEMENT
-// ============================================================================
-
 // File: app/src/main/java/com/example/smallbasket/location/ForegroundLocationManager.kt
 package com.example.smallbasket.location
 
@@ -12,8 +8,10 @@ import androidx.annotation.RequiresPermission
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.Tasks
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Handles instant high-accuracy location when app is in foreground
@@ -32,20 +30,21 @@ class ForegroundLocationManager(private val context: Context) {
     /**
      * Get instant high-accuracy location for foreground use
      * Returns within 2-3 seconds
+     * MUST be called from a coroutine (not main thread)
      */
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    suspend fun getInstantLocation(): LocationData? {
+    suspend fun getInstantLocation(): LocationData? = withContext(Dispatchers.IO) {
         if (!LocationUtils.hasLocationPermission(context)) {
             Log.w(TAG, "No location permission")
-            return null
+            return@withContext null
         }
 
         if (!LocationUtils.isLocationEnabled(context)) {
             Log.w(TAG, "Location services disabled")
-            return null
+            return@withContext null
         }
 
-        return try {
+        return@withContext try {
             Log.d(TAG, "Requesting high-accuracy location")
             val startTime = System.currentTimeMillis()
 
@@ -56,8 +55,10 @@ class ForegroundLocationManager(private val context: Context) {
                 .setDurationMillis(HIGH_ACCURACY_TIMEOUT_MS)
                 .build()
 
-            val task = fusedLocationClient.getCurrentLocation(request, null)
-            val location = Tasks.await(task, HIGH_ACCURACY_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            // Use coroutine timeout instead of Tasks.await with timeout
+            val location = withTimeoutOrNull(HIGH_ACCURACY_TIMEOUT_MS) {
+                fusedLocationClient.getCurrentLocation(request, null).await()
+            }
 
             if (location != null) {
                 val duration = System.currentTimeMillis() - startTime
@@ -75,10 +76,13 @@ class ForegroundLocationManager(private val context: Context) {
 
                 locationData
             } else {
-                Log.w(TAG, "Location request returned null")
+                Log.w(TAG, "Location request returned null or timed out")
                 null
             }
 
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception getting instant location", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error getting instant location", e)
             null
@@ -87,18 +91,26 @@ class ForegroundLocationManager(private val context: Context) {
 
     /**
      * Get last known location (instant, battery-free)
+     * MUST be called from a coroutine (not main thread)
      */
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    suspend fun getLastKnownLocation(): LocationData? {
+    suspend fun getLastKnownLocation(): LocationData? = withContext(Dispatchers.IO) {
         if (!LocationUtils.hasLocationPermission(context)) {
-            return null
+            Log.w(TAG, "No location permission")
+            return@withContext null
         }
 
-        return try {
-            val task = fusedLocationClient.lastLocation
-            val location = Tasks.await(task, 1000, TimeUnit.MILLISECONDS)
+        return@withContext try {
+            Log.d(TAG, "Requesting last known location")
+
+            // Use coroutine await instead of Tasks.await
+            val location = withTimeoutOrNull(1000) {
+                fusedLocationClient.lastLocation.await()
+            }
 
             if (location != null) {
+                Log.d(TAG, "Got last known location (accuracy: ${location.accuracy}m, age: ${System.currentTimeMillis() - location.time}ms)")
+
                 LocationData.fromLocation(
                     location = location,
                     source = LocationData.LocationSource.FOREGROUND,
@@ -106,8 +118,12 @@ class ForegroundLocationManager(private val context: Context) {
                     batteryLevel = repository.getBatteryLevel(context)
                 )
             } else {
+                Log.w(TAG, "No last known location available")
                 null
             }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security exception getting last known location", e)
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Error getting last known location", e)
             null

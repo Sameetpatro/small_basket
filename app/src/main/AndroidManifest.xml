@@ -2,18 +2,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Network permissions -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Activity Recognition for Android 10+ -->
     <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"
         android:minSdkVersion="34" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
+    <!-- Background location - NOT USED but declared for future -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"
+        tools:node="remove" />
 
     <application
+        android:name=".SmallBasketApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -23,6 +34,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmallBasket"
         tools:targetApi="31">
+
+        <!-- Activities -->
         <activity
             android:name=".MyLogsActivity"
             android:exported="false" />
@@ -65,11 +78,11 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- NEW: Activity Transition Receiver -->
+
+        <!-- Activity Transition Receiver -->
         <receiver
             android:name=".location.ActivityTransitionReceiver"
             android:enabled="true"
@@ -78,6 +91,17 @@
                 <action android:name="com.example.smallbasket.ACTIVITY_TRANSITION" />
             </intent-filter>
         </receiver>
+
+        <!-- WorkManager initialization -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup" />
+        </provider>
     </application>
 
 </manifest>
