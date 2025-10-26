@@ -368,19 +368,22 @@ class Homepage : AppCompatActivity() {
             map = mapLibreMap
 
             // Configure map UI settings
+            // Configure map UI settings
             mapLibreMap.uiSettings.apply {
                 isLogoEnabled = false
                 isAttributionEnabled = true
                 attributionGravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
                 setAttributionMargins(0, 0, 8, 8)
-                isRotateGesturesEnabled = false
+                isRotateGesturesEnabled = true
                 isCompassEnabled = true
                 isZoomGesturesEnabled = true
+                isScrollGesturesEnabled = true  // Enable panning/dragging
+                isTiltGesturesEnabled = true     // Enable tilting
             }
 
             // Load map style with street view
             mapLibreMap.setStyle(
-                Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
+                Style.Builder().fromUri("https://tiles.openfreemap.org/styles/liberty")
             ) { style ->
                 Log.d(TAG, "Map style loaded successfully")
 
@@ -391,6 +394,7 @@ class Homepage : AppCompatActivity() {
                     .zoom(12.0)
                     .build()
 
+                // Enable marker click listener to show user details
                 // Enable marker click listener to show user details
                 mapLibreMap.setOnMarkerClickListener { marker ->
                     val userData = userMarkers[marker]
@@ -508,9 +512,14 @@ class Homepage : AppCompatActivity() {
     }
 
     private fun setupMapClickListener() {
+        // Only click on the card background to expand, not the map itself
         binding.mapCard.setOnClickListener {
+            Log.d(TAG, "Map card clicked - expanding map")
             toggleMapSize()
         }
+
+        // Remove the map view click listener so markers can be clicked
+        // binding.mapView.setOnClickListener will interfere with marker clicks
     }
 
     private fun toggleMapSize() {
@@ -541,10 +550,12 @@ class Homepage : AppCompatActivity() {
                 isCompassEnabled = true
                 isZoomGesturesEnabled = true
                 isRotateGesturesEnabled = true
+                isScrollGesturesEnabled = true  // Enable panning/dragging
+                isTiltGesturesEnabled = true     // Enable tilting
             }
 
             expandedMap.setStyle(
-                Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
+                Style.Builder().fromUri("https://tiles.openfreemap.org/styles/liberty")
             ) {
                 // Copy current camera position from main map
                 map?.cameraPosition?.let { position ->
