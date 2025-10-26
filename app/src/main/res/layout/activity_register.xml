@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8"
+    android:background="#E0F2F1"
     android:fillViewport="true">
 
     <LinearLayout
@@ -12,108 +13,283 @@
         android:padding="24dp"
         android:gravity="center_horizontal">
 
-        <!-- App logo or icon -->
-        <ImageView
-            android:id="@+id/imgLogo"
-            android:layout_width="90dp"
-            android:layout_height="90dp"
-            android:src="@drawable/ic_shopping_cart"
-            android:contentDescription="App Logo"
+        <!-- App Logo with Teal Background -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
             android:layout_marginTop="40dp"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginBottom="32dp"
+            app:cardCornerRadius="50dp"
+            app:cardElevation="8dp"
+            app:cardBackgroundColor="#14B8A6">
+
+            <ImageView
+                android:id="@+id/imgLogo"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_shopping_cart"
+                android:contentDescription="App Logo"
+                app:tint="#FFFFFF" />
+        </androidx.cardview.widget.CardView>
 
         <!-- Title -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create Your Account"
-            android:textSize="24sp"
+            android:text="Create Account"
+            android:textSize="32sp"
             android:textStyle="bold"
-            android:textColor="#222222"
-            android:layout_marginBottom="24dp" />
+            android:textColor="#0F766E"
+            android:layout_marginBottom="8dp" />
 
-        <!-- Registration card -->
-        <LinearLayout
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Join the campus network"
+            android:textSize="16sp"
+            android:textColor="#64748B"
+            android:layout_marginBottom="32dp" />
+
+        <!-- Name Input -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card_white"
-            android:padding="20dp"
-            android:elevation="6dp"
-            android:layout_marginBottom="30dp">
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF">
 
-            <EditText
-                android:id="@+id/etName"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Full Name"
-                android:inputType="textPersonName"
-                android:padding="14dp"
-                android:background="@drawable/bg_input_field"
-                android:layout_marginBottom="14dp" />
+                android:orientation="horizontal"
+                android:padding="4dp"
+                android:gravity="center_vertical">
 
-            <EditText
-                android:id="@+id/etEmail"
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="#14B8A6" />
+
+                <EditText
+                    android:id="@+id/etName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Full Name"
+                    android:inputType="textPersonName"
+                    android:padding="18dp"
+                    android:textSize="16sp"
+                    android:textColor="#1E293B"
+                    android:textColorHint="#94A3B8"
+                    android:background="@android:color/transparent"
+                    android:drawableStart="@android:drawable/ic_menu_myplaces"
+                    android:drawablePadding="12dp"
+                    android:drawableTint="#14B8A6" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Email Input -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="College Email (e.g. yourname@iiitsonepat.ac.in)"
-                android:inputType="textEmailAddress"
-                android:padding="14dp"
-                android:background="@drawable/bg_input_field"
-                android:layout_marginBottom="6dp" />
-            <EditText
-                android:id="@+id/etMobile"
+                android:orientation="horizontal"
+                android:padding="4dp"
+                android:gravity="center_vertical">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="#14B8A6" />
+
+                <EditText
+                    android:id="@+id/etEmail"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="College Email"
+                    android:inputType="textEmailAddress"
+                    android:padding="18dp"
+                    android:textSize="16sp"
+                    android:textColor="#1E293B"
+                    android:textColorHint="#94A3B8"
+                    android:background="@android:color/transparent"
+                    android:drawableStart="@android:drawable/ic_dialog_email"
+                    android:drawablePadding="12dp"
+                    android:drawableTint="#14B8A6" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Mobile Input -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Mobile Number"
-                android:inputType="phone"
-                android:maxLength="10"
-                android:padding="14dp"
-                android:background="@drawable/bg_input_field"
-                android:layout_marginBottom="20dp" />
+                android:orientation="horizontal"
+                android:padding="4dp"
+                android:gravity="center_vertical">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="#14B8A6" />
+
+                <EditText
+                    android:id="@+id/etMobile"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Mobile Number"
+                    android:inputType="phone"
+                    android:maxLength="10"
+                    android:padding="18dp"
+                    android:textSize="16sp"
+                    android:textColor="#1E293B"
+                    android:textColorHint="#94A3B8"
+                    android:background="@android:color/transparent"
+                    android:drawableStart="@android:drawable/stat_sys_phone_call"
+                    android:drawablePadding="12dp"
+                    android:drawableTint="#14B8A6" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Password Input -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="#FFFFFF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="4dp"
+                android:gravity="center_vertical">
+
+                <View
+                    android:layout_width="4dp"
+                    android:layout_height="match_parent"
+                    android:background="#14B8A6" />
+
+                <EditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Password (min 6 characters)"
+                    android:inputType="textPassword"
+                    android:padding="18dp"
+                    android:textSize="16sp"
+                    android:textColor="#1E293B"
+                    android:textColorHint="#94A3B8"
+                    android:background="@android:color/transparent"
+                    android:drawableStart="@android:drawable/ic_lock_lock"
+                    android:drawablePadding="12dp"
+                    android:drawableTint="#14B8A6" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- College Email Warning -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#FEF3C7">
 
             <TextView
                 android:id="@+id/tvCollegeEmailNote"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="⚠️ Please use your official college email ID ending with @iiitsonepat.ac.in"
-                android:textSize="12sp"
-                android:textColor="#D32F2F"
-                android:layout_marginBottom="14dp" />
+                android:text="⚠️ Use your official @iiitsonepat.ac.in email"
+                android:textSize="13sp"
+                android:textColor="#92400E"
+                android:padding="12dp" />
+        </androidx.cardview.widget.CardView>
 
-            <EditText
-                android:id="@+id/etPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:padding="14dp"
-                android:background="@drawable/bg_input_field"
-                android:layout_marginBottom="20dp" />
+        <!-- Sign Up Button -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#14B8A6">
 
             <Button
                 android:id="@+id/btnSignUp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Create Account"
+                android:textColor="#FFFFFF"
                 android:textStyle="bold"
-                android:textColor="#FFF"
-                android:backgroundTint="#FF5722"
-                android:padding="14dp"
-                android:elevation="2dp" />
+                android:textSize="18sp"
+                android:padding="18dp"
+                android:background="@android:color/transparent"
+                android:textAllCaps="false" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Divider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#CBD5E1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="OR"
+                android:textColor="#64748B"
+                android:textSize="14sp"
+                android:paddingHorizontal="16dp" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#CBD5E1" />
         </LinearLayout>
 
+        <!-- Login Link -->
         <TextView
             android:id="@+id/tvGoToLogin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Already have an account? Log In"
-            android:textColor="#FF5722"
-            android:textSize="14sp"
+            android:textColor="#14B8A6"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:layout_marginBottom="24dp" />
-
+            android:padding="12dp"
+            android:layout_marginBottom="32dp" />
 
     </LinearLayout>
 </ScrollView>
