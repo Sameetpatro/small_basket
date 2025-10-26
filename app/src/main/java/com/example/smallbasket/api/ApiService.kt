@@ -51,7 +51,9 @@ interface ApiService {
     // ============================================
 
     @POST("user/connectivity/update")
-    suspend fun updateConnectivity(@Body request: ConnectivityUpdateRequest): Response<SuccessResponse>
+    suspend fun updateConnectivity(
+        @Body request: ConnectivityUpdateRequest
+    ): Response<SuccessResponse>
 
     // ============================================
     // AREA ENDPOINTS
