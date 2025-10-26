@@ -7,20 +7,16 @@ import android.location.Location
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.example.smallbasket.api.RetrofitClient
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Tasks
+import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
 /**
- * Background worker that fetches location periodically
- * Runs for 2-5 seconds, checks cache first, then requests if needed
- * Now also syncs with backend API
+ * FIXED: Background worker that fetches location AND syncs with backend immediately
  */
 class LocationWorker(
     context: Context,
@@ -32,6 +28,7 @@ class LocationWorker(
         const val WORK_NAME = "location_tracking_work"
         private const val LOCATION_TIMEOUT_MS = 5000L
         private const val CACHE_MAX_AGE_MS = 10 * 60 * 1000L
+        private const val MAX_RETRIES = 3
     }
 
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
@@ -39,7 +36,7 @@ class LocationWorker(
     private val api = RetrofitClient.apiService
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "LocationWorker started - checking tracking status")
+        Log.d(TAG, "=== LocationWorker STARTED ===")
 
         if (!repository.isTrackingEnabled()) {
             Log.d(TAG, "Tracking disabled, skipping")
@@ -60,36 +57,37 @@ class LocationWorker(
             val startTime = System.currentTimeMillis()
             Log.d(TAG, "Attempting to get location")
 
-            // Step 1: Try cached location first
-            val cachedLocation = getCachedLocation()
-            val location = if (cachedLocation != null) {
-                Log.d(TAG, "Using cached location")
-                cachedLocation
-            } else {
-                // Step 2: Request fresh location
+            // Step 1: Get location (try cache first, then fresh)
+            val location = getCachedLocation() ?: run {
                 Log.d(TAG, "No fresh cache, requesting new location")
                 requestFreshLocation()
             }
 
             if (location != null) {
+                Log.d(TAG, "✓ Got location: (${location.latitude}, ${location.longitude})")
+
+                // Step 2: Save locally
                 val locationData = LocationData.fromLocation(
                     location = location,
                     source = LocationData.LocationSource.BACKGROUND_WORKER,
                     activityType = if (repository.getLastActivityState()) "MOVING" else "STILL",
                     batteryLevel = repository.getBatteryLevel(applicationContext)
                 )
-
-                // Save to local repository
                 repository.saveLocation(locationData)
 
-                // Sync with backend API
-                syncLocationWithBackend(location)
+                // Step 3: IMMEDIATELY sync with backend (THIS IS THE FIX!)
+                val syncSuccess = syncLocationWithBackend(location)
 
-                val duration = System.currentTimeMillis() - startTime
-                Log.d(TAG, "Work completed in ${duration}ms")
-                Result.success()
+                if (syncSuccess) {
+                    val duration = System.currentTimeMillis() - startTime
+                    Log.d(TAG, "✓ Work completed successfully in ${duration}ms")
+                    Result.success()
+                } else {
+                    Log.w(TAG, "✗ Location sync failed, will retry")
+                    Result.retry()
+                }
             } else {
-                Log.w(TAG, "Failed to get location")
+                Log.w(TAG, "✗ Failed to get location")
                 Result.retry()
             }
 
@@ -103,33 +101,54 @@ class LocationWorker(
     }
 
     /**
-     * Sync location with backend API
+     * FIXED: Sync location with backend API with retry logic
+     * Returns true if successful, false otherwise
      */
-    private suspend fun syncLocationWithBackend(location: Location) {
-        try {
-            Log.d(TAG, "Syncing location with backend")
+    private suspend fun syncLocationWithBackend(location: Location): Boolean {
+        var retryCount = 0
 
-            val request = UpdateGPSLocationRequest(
-                latitude = location.latitude,
-                longitude = location.longitude,
-                accuracy = location.accuracy,
-                fastMode = true
-            )
+        while (retryCount < MAX_RETRIES) {
+            try {
+                Log.d(TAG, "Syncing location with backend (attempt ${retryCount + 1}/$MAX_RETRIES)")
 
-            val response = api.updateGPSLocation(request)
+                val request = UpdateGPSLocationRequest(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    accuracy = location.accuracy,
+                    fastMode = true // Use fast mode for background updates
+                )
 
-            if (response.isSuccessful) {
-                Log.d(TAG, "Location synced successfully with backend")
-                val data = response.body()
-                Log.d(TAG, "Primary area: ${data?.data?.primaryArea}")
-            } else {
-                Log.w(TAG, "Failed to sync location with backend: ${response.code()}")
+                // Call backend API
+                val response = api.updateGPSLocation(request)
+
+                if (response.isSuccessful) {
+                    val data = response.body()
+                    Log.d(TAG, "✓ Location synced successfully!")
+                    Log.d(TAG, "  - Primary area: ${data?.data?.primaryArea}")
+                    Log.d(TAG, "  - All areas: ${data?.data?.allMatchingAreas}")
+                    Log.d(TAG, "  - Is on edge: ${data?.data?.isOnEdge}")
+                    return true
+                } else {
+                    Log.w(TAG, "✗ Backend returned error: ${response.code()} - ${response.message()}")
+                    val errorBody = response.errorBody()?.string()
+                    Log.w(TAG, "  Error body: $errorBody")
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "✗ Exception syncing location (attempt ${retryCount + 1})", e)
             }
 
-        } catch (e: Exception) {
-            Log.e(TAG, "Error syncing location with backend", e)
-            // Don't fail the worker if backend sync fails
+            retryCount++
+            if (retryCount < MAX_RETRIES) {
+                // Exponential backoff: 1s, 2s, 4s
+                val delayMs = (1000L * Math.pow(2.0, retryCount.toDouble() - 1)).toLong()
+                Log.d(TAG, "Retrying in ${delayMs}ms...")
+                delay(delayMs)
+            }
         }
+
+        Log.e(TAG, "✗ Failed to sync location after $MAX_RETRIES attempts")
+        return false
     }
 
     @Suppress("MissingPermission")
@@ -148,9 +167,10 @@ class LocationWorker(
                 Log.d(TAG, "Cached location age: ${age}ms")
 
                 if (LocationUtils.isLocationFresh(location.time, CACHE_MAX_AGE_MS)) {
+                    Log.d(TAG, "✓ Using cached location")
                     location
                 } else {
-                    Log.d(TAG, "Cached location too old")
+                    Log.d(TAG, "✗ Cached location too old")
                     null
                 }
             } else {
@@ -186,9 +206,9 @@ class LocationWorker(
             val location = Tasks.await(task, LOCATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
 
             if (location == null) {
-                Log.w(TAG, "Location request returned null")
+                Log.w(TAG, "✗ Location request returned null")
             } else {
-                Log.d(TAG, "Fresh location obtained: accuracy=${location.accuracy}m")
+                Log.d(TAG, "✓ Fresh location obtained: accuracy=${location.accuracy}m")
             }
 
             location

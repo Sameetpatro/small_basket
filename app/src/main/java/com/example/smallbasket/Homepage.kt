@@ -134,8 +134,41 @@ class Homepage : AppCompatActivity() {
 
         currentUserLocation?.let { location ->
             Log.d(TAG, "Manual refresh triggered")
-            showLoadingState(true)
-            loadNearbyUsersOnMap(location.latitude, location.longitude)
+
+            lifecycleScope.launch {
+                showLoadingState(true)
+
+                try {
+                    // CRITICAL: Force a fresh location update first
+                    Log.d(TAG, "Getting fresh location before refresh...")
+                    val freshLocation = locationCoordinator.getInstantLocation()
+
+                    if (freshLocation != null) {
+                        Log.d(TAG, "✓ Got fresh location")
+                        currentUserLocation = LatLng(freshLocation.latitude, freshLocation.longitude)
+                        updateMapWithLocation(freshLocation)
+
+                        // Wait for backend sync
+                        Log.d(TAG, "Waiting 2s for backend sync...")
+                        kotlinx.coroutines.delay(2000)
+
+                        // Now load nearby users
+                        loadNearbyUsersOnMap(freshLocation.latitude, freshLocation.longitude)
+                    } else {
+                        // Fall back to existing location
+                        Log.w(TAG, "Couldn't get fresh location, using cached")
+                        loadNearbyUsersOnMap(location.latitude, location.longitude)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during refresh", e)
+                    Toast.makeText(
+                        this@Homepage,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    showLoadingState(false)
+                }
+            }
         } ?: run {
             Toast.makeText(
                 this,
@@ -143,13 +176,16 @@ class Homepage : AppCompatActivity() {
                 Toast.LENGTH_SHORT
             ).show()
 
-            // Try to get location first
             lifecycleScope.launch {
                 try {
                     val location = locationCoordinator.getInstantLocation()
                     if (location != null) {
                         currentUserLocation = LatLng(location.latitude, location.longitude)
                         updateMapWithLocation(location)
+
+                        // Wait for sync
+                        kotlinx.coroutines.delay(2000)
+
                         loadNearbyUsersOnMap(location.latitude, location.longitude)
                     } else {
                         Toast.makeText(
@@ -264,6 +300,9 @@ class Homepage : AppCompatActivity() {
         }
     }
 
+
+// CRITICAL FIX: Replace the startLocationTracking() function in Homepage.kt
+
     private fun startLocationTracking() {
         Log.i(TAG, "=== Starting Location Tracking ===")
 
@@ -274,16 +313,21 @@ class Homepage : AppCompatActivity() {
 
                 Log.d(TAG, "Background tracking started successfully")
 
-                // Get instant location for foreground display
-                Log.d(TAG, "Requesting instant location")
+                // CRITICAL FIX: Get instant location AND WAIT for sync
+                Log.d(TAG, "Requesting instant location with sync")
                 val location = locationCoordinator.getInstantLocation()
 
                 if (location != null) {
-                    Log.d(TAG, "Got instant location: (${location.latitude}, ${location.longitude})")
+                    Log.d(TAG, "✓ Got instant location: (${location.latitude}, ${location.longitude})")
                     currentUserLocation = LatLng(location.latitude, location.longitude)
                     updateMapWithLocation(location)
 
-                    // Load nearby users on map with loading state
+                    // CRITICAL: Wait a moment for backend to process the location
+                    Log.d(TAG, "Waiting 2 seconds for backend to process location...")
+                    kotlinx.coroutines.delay(2000)
+
+                    // NOW load nearby users - backend should have our location
+                    Log.d(TAG, "NOW loading nearby users...")
                     showLoadingState(true)
                     loadNearbyUsersOnMap(location.latitude, location.longitude)
 
@@ -300,11 +344,20 @@ class Homepage : AppCompatActivity() {
                         Log.d(TAG, "Using last known location")
                         currentUserLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
                         updateMapWithLocation(lastLocation)
+
+                        // Still wait a bit
+                        kotlinx.coroutines.delay(1000)
+
                         showLoadingState(true)
                         loadNearbyUsersOnMap(lastLocation.latitude, lastLocation.longitude)
                     } else {
                         Log.w(TAG, "No location available")
                         showLoadingState(false)
+                        Toast.makeText(
+                            this@Homepage,
+                            "Unable to get location. Please check permissions.",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
 
