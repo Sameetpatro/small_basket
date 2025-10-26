@@ -1,12 +1,16 @@
+// File: app/src/main/java/com/example/smallbasket/location/LocationWorker.kt
 package com.example.smallbasket.location
 
 import android.Manifest
 import android.content.Context
 import android.location.Location
 import android.util.Log
-import androidx.annotation.RequiresPermission
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.example.smallbasket.api.RetrofitClient
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -16,6 +20,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Background worker that fetches location periodically
  * Runs for 2-5 seconds, checks cache first, then requests if needed
+ * Now also syncs with backend API
  */
 class LocationWorker(
     context: Context,
@@ -25,23 +30,22 @@ class LocationWorker(
     companion object {
         private const val TAG = "LocationWorker"
         const val WORK_NAME = "location_tracking_work"
-        private const val LOCATION_TIMEOUT_MS = 5000L // 5 seconds max
-        private const val CACHE_MAX_AGE_MS = 10 * 60 * 1000L // 10 minutes
+        private const val LOCATION_TIMEOUT_MS = 5000L
+        private const val CACHE_MAX_AGE_MS = 10 * 60 * 1000L
     }
 
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     private val repository = LocationRepository.getInstance(context)
+    private val api = RetrofitClient.apiService
 
     override suspend fun doWork(): Result {
         Log.d(TAG, "LocationWorker started - checking tracking status")
 
-        // Check if tracking is enabled
         if (!repository.isTrackingEnabled()) {
             Log.d(TAG, "Tracking disabled, skipping")
             return Result.success()
         }
 
-        // Check permissions
         if (!LocationUtils.hasLocationPermission(applicationContext)) {
             Log.w(TAG, "No location permission, stopping work")
             return Result.failure()
@@ -58,39 +62,31 @@ class LocationWorker(
 
             // Step 1: Try cached location first
             val cachedLocation = getCachedLocation()
-            if (cachedLocation != null) {
-                Log.d(TAG, "Using cached location (${cachedLocation.accuracy}m accuracy)")
-
-                val locationData = LocationData.fromLocation(
-                    location = cachedLocation,
-                    source = LocationData.LocationSource.BACKGROUND_WORKER,
-                    activityType = if (repository.getLastActivityState()) "MOVING" else "STILL",
-                    batteryLevel = repository.getBatteryLevel(applicationContext)
-                )
-
-                repository.saveLocation(locationData)
-
-                val duration = System.currentTimeMillis() - startTime
-                Log.d(TAG, "Work completed in ${duration}ms (cached)")
-                return Result.success()
+            val location = if (cachedLocation != null) {
+                Log.d(TAG, "Using cached location")
+                cachedLocation
+            } else {
+                // Step 2: Request fresh location
+                Log.d(TAG, "No fresh cache, requesting new location")
+                requestFreshLocation()
             }
 
-            // Step 2: Request fresh location
-            Log.d(TAG, "No fresh cache, requesting new location")
-            val freshLocation = requestFreshLocation()
-
-            if (freshLocation != null) {
+            if (location != null) {
                 val locationData = LocationData.fromLocation(
-                    location = freshLocation,
+                    location = location,
                     source = LocationData.LocationSource.BACKGROUND_WORKER,
                     activityType = if (repository.getLastActivityState()) "MOVING" else "STILL",
                     batteryLevel = repository.getBatteryLevel(applicationContext)
                 )
 
+                // Save to local repository
                 repository.saveLocation(locationData)
 
+                // Sync with backend API
+                syncLocationWithBackend(location)
+
                 val duration = System.currentTimeMillis() - startTime
-                Log.d(TAG, "Work completed in ${duration}ms (fresh)")
+                Log.d(TAG, "Work completed in ${duration}ms")
                 Result.success()
             } else {
                 Log.w(TAG, "Failed to get location")
@@ -107,8 +103,35 @@ class LocationWorker(
     }
 
     /**
-     * Try to get cached location (battery-free)
+     * Sync location with backend API
      */
+    private suspend fun syncLocationWithBackend(location: Location) {
+        try {
+            Log.d(TAG, "Syncing location with backend")
+
+            val request = UpdateGPSLocationRequest(
+                latitude = location.latitude,
+                longitude = location.longitude,
+                accuracy = location.accuracy,
+                fastMode = true
+            )
+
+            val response = api.updateGPSLocation(request)
+
+            if (response.isSuccessful) {
+                Log.d(TAG, "Location synced successfully with backend")
+                val data = response.body()
+                Log.d(TAG, "Primary area: ${data?.data?.primaryArea}")
+            } else {
+                Log.w(TAG, "Failed to sync location with backend: ${response.code()}")
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing location with backend", e)
+            // Don't fail the worker if backend sync fails
+        }
+    }
+
     @Suppress("MissingPermission")
     private fun getCachedLocation(): Location? {
         return try {
@@ -120,7 +143,6 @@ class LocationWorker(
             val task = fusedLocationClient.lastLocation
             val location = Tasks.await(task, 1000, TimeUnit.MILLISECONDS)
 
-            // Check if cache is fresh enough
             if (location != null) {
                 val age = System.currentTimeMillis() - location.time
                 Log.d(TAG, "Cached location age: ${age}ms")
@@ -144,9 +166,6 @@ class LocationWorker(
         }
     }
 
-    /**
-     * Request fresh location with battery-optimized settings
-     */
     @Suppress("MissingPermission")
     private suspend fun requestFreshLocation(): Location? {
         return try {
@@ -157,16 +176,13 @@ class LocationWorker(
 
             Log.d(TAG, "Requesting fresh location with balanced power")
 
-            // Use BALANCED_POWER_ACCURACY for battery efficiency
             val request = CurrentLocationRequest.Builder()
                 .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setMaxUpdateAgeMillis(60000) // Accept up to 1 minute old
+                .setMaxUpdateAgeMillis(60000)
                 .setDurationMillis(LOCATION_TIMEOUT_MS)
                 .build()
 
             val task = fusedLocationClient.getCurrentLocation(request, null)
-
-            // Wait with timeout
             val location = Tasks.await(task, LOCATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
 
             if (location == null) {

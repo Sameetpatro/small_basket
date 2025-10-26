@@ -2,11 +2,13 @@
 package com.example.smallbasket
 
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +17,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityHomepageBinding
 import com.example.smallbasket.location.*
+import com.example.smallbasket.models.MapUserData
+import com.example.smallbasket.repository.MapRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
@@ -24,13 +28,17 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.annotations.Marker
 import org.maplibre.android.annotations.IconFactory
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.*
 
 class Homepage : AppCompatActivity() {
 
     companion object {
         private const val TAG = "Homepage"
+        private const val DEFAULT_ZOOM = 15.0
+        private const val MAP_RADIUS_METERS = 5000.0 // 5km radius
     }
 
     private lateinit var auth: FirebaseAuth
@@ -42,6 +50,15 @@ class Homepage : AppCompatActivity() {
     // Location tracking components
     private lateinit var locationCoordinator: LocationTrackingCoordinator
     private lateinit var permissionManager: LocationPermissionManager
+
+    // Map repository
+    private val mapRepository = MapRepository()
+
+    // Store markers and their associated user data
+    private val userMarkers = mutableMapOf<Marker, MapUserData>()
+
+    // Current user location
+    private var currentUserLocation: LatLng? = null
 
     // Permission launcher
     private val permissionLauncher = registerForActivityResult(
@@ -181,7 +198,11 @@ class Homepage : AppCompatActivity() {
 
                 if (location != null) {
                     Log.d(TAG, "Got instant location: (${location.latitude}, ${location.longitude})")
+                    currentUserLocation = LatLng(location.latitude, location.longitude)
                     updateMapWithLocation(location)
+
+                    // Load nearby users on map
+                    loadNearbyUsersOnMap(location.latitude, location.longitude)
 
                     Toast.makeText(
                         this@Homepage,
@@ -194,22 +215,13 @@ class Homepage : AppCompatActivity() {
                     val lastLocation = locationCoordinator.getLastKnownLocation()
                     if (lastLocation != null) {
                         Log.d(TAG, "Using last known location")
+                        currentUserLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
                         updateMapWithLocation(lastLocation)
+                        loadNearbyUsersOnMap(lastLocation.latitude, lastLocation.longitude)
                     } else {
                         Log.w(TAG, "No location available")
                     }
                 }
-
-                // Log tracking stats
-                val stats = locationCoordinator.getTrackingStats()
-                Log.d(TAG, """
-                    === Tracking Stats ===
-                    Enabled: ${stats.isTrackingEnabled}
-                    Activity: ${stats.currentActivityState}
-                    Interval: ${stats.currentInterval}
-                    WorkManager: ${stats.workManagerScheduled}
-                    Last Location: ${stats.lastLocationTimestamp}
-                """.trimIndent())
 
             } catch (e: SecurityException) {
                 Log.e(TAG, "Security exception while starting tracking", e)
@@ -232,6 +244,7 @@ class Homepage : AppCompatActivity() {
     private fun updateMapWithLocation(location: LocationData) {
         try {
             val latLng = LatLng(location.latitude, location.longitude)
+            currentUserLocation = latLng
 
             Log.d(TAG, "Updating map to location: $latLng (accuracy: ${location.accuracy}m)")
 
@@ -240,13 +253,13 @@ class Homepage : AppCompatActivity() {
                 mapInstance.animateCamera(
                     org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
                         latLng,
-                        15.0
+                        DEFAULT_ZOOM
                     ),
                     1000
                 )
 
-                // Add marker for user location
-                addUserMarker(mapInstance, latLng, auth.currentUser?.displayName ?: "You")
+                // Add marker for current user
+                addCurrentUserMarker(mapInstance, latLng)
             }
 
         } catch (e: Exception) {
@@ -254,35 +267,80 @@ class Homepage : AppCompatActivity() {
         }
     }
 
-    private fun addUserMarker(mapInstance: MapLibreMap, latLng: LatLng, userName: String) {
+    private fun addCurrentUserMarker(mapInstance: MapLibreMap, latLng: LatLng) {
         try {
+            // Remove existing current user marker if any
+            // (You can track this with a separate variable if needed)
+
             val markerOptions = MarkerOptions()
                 .position(latLng)
-                .title(userName)
-                .snippet("Last updated: ${System.currentTimeMillis()}")
+                .title("You")
+                .snippet("Current location")
 
             mapInstance.addMarker(markerOptions)
-            Log.d(TAG, "Added marker for $userName at $latLng")
+            Log.d(TAG, "Added current user marker at $latLng")
         } catch (e: Exception) {
-            Log.e(TAG, "Error adding marker", e)
+            Log.e(TAG, "Error adding current user marker", e)
         }
     }
 
-    private fun checkTrackingStatus() {
-        val isTracking = locationCoordinator.isTracking()
-        val stats = locationCoordinator.getTrackingStats()
+    // ============ MAP FUNCTIONALITY ============
 
-        Log.d(TAG, """
-            === Current Tracking Status ===
-            Enabled: $isTracking
-            Activity: ${stats.currentActivityState}
-            Interval: ${stats.currentInterval}
-            WorkManager: ${stats.workManagerScheduled}
-            Last Location: ${stats.lastLocationTimestamp}
-        """.trimIndent())
+    private fun loadNearbyUsersOnMap(latitude: Double, longitude: Double) {
+        Log.d(TAG, "Loading nearby users on map")
+
+        lifecycleScope.launch {
+            try {
+                val result = mapRepository.getNearbyUsers(latitude, longitude, MAP_RADIUS_METERS)
+
+                result.onSuccess { response ->
+                    Log.d(TAG, "Found ${response.total} nearby users")
+                    displayUsersOnMap(response.users)
+                }
+
+                result.onFailure { error ->
+                    Log.e(TAG, "Error loading nearby users: ${error.message}")
+                }
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception loading nearby users", e)
+            }
+        }
     }
 
-    // ============ MAP METHODS ============
+    private fun displayUsersOnMap(users: List<MapUserData>) {
+        map?.let { mapInstance ->
+            // Clear existing user markers
+            userMarkers.keys.forEach { marker ->
+                mapInstance.removeMarker(marker)
+            }
+            userMarkers.clear()
+
+            // Add markers for each user
+            users.forEach { user ->
+                try {
+                    val latLng = LatLng(user.latitude, user.longitude)
+
+                    val markerOptions = MarkerOptions()
+                        .position(latLng)
+                        .title(user.name ?: user.email.substringBefore("@"))
+                        .snippet(user.currentArea ?: "Unknown Area")
+
+                    val marker = mapInstance.addMarker(markerOptions)
+                    userMarkers[marker] = user
+
+                    Log.d(TAG, "Added marker for ${user.name} at $latLng")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error adding marker for user ${user.uid}", e)
+                }
+            }
+
+            // Update online users count
+            binding.tvOnlineUsers.text = users.size.toString()
+
+            Log.d(TAG, "Displayed ${users.size} users on map")
+        }
+    }
 
     private fun setupCustomBottomNav() {
         binding.navHome.setOnClickListener {
@@ -317,10 +375,10 @@ class Homepage : AppCompatActivity() {
                 setAttributionMargins(0, 0, 8, 8)
                 isRotateGesturesEnabled = false
                 isCompassEnabled = true
-                isZoomGesturesEnabled = false
+                isZoomGesturesEnabled = true
             }
 
-            // Load map style
+            // Load map style with street view
             mapLibreMap.setStyle(
                 Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
             ) { style ->
@@ -333,18 +391,119 @@ class Homepage : AppCompatActivity() {
                     .zoom(12.0)
                     .build()
 
-                // Enable info window for markers
+                // Enable marker click listener to show user details
                 mapLibreMap.setOnMarkerClickListener { marker ->
-                    Toast.makeText(
-                        this@Homepage,
-                        "${marker.title}\n${marker.snippet}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    true
+                    val userData = userMarkers[marker]
+                    if (userData != null) {
+                        showUserDetailsBottomSheet(userData)
+                        true
+                    } else {
+                        // Current user marker or other marker
+                        Toast.makeText(
+                            this@Homepage,
+                            "${marker.title}\n${marker.snippet}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        true
+                    }
                 }
 
-                Log.d(TAG, "Map initialized successfully")
+                Log.d(TAG, "Map initialized successfully with street view")
             }
+        }
+    }
+
+    private fun showUserDetailsBottomSheet(userData: MapUserData) {
+        val dialogView = LayoutInflater.from(this).inflate(
+            R.layout.bottom_sheet_user_marker,
+            null
+        )
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Populate user details
+        dialogView.findViewById<TextView>(R.id.tvUserName).text =
+            userData.name ?: userData.email.substringBefore("@")
+
+        dialogView.findViewById<TextView>(R.id.tvUserEmail).text = userData.email
+
+        dialogView.findViewById<TextView>(R.id.tvCurrentArea).text =
+            userData.currentArea ?: "Unknown"
+
+        // Format last active time
+        val lastActiveText = if (userData.lastUpdated != null) {
+            try {
+                formatLastActive(userData.lastUpdated)
+            } catch (e: Exception) {
+                "Recently active"
+            }
+        } else {
+            "Recently active"
+        }
+        dialogView.findViewById<TextView>(R.id.tvLastActive).text = lastActiveText
+
+        // Show accuracy if available
+        val accuracyText = if (userData.accuracy != null) {
+            "±${userData.accuracy.toInt()}m"
+        } else {
+            "Unknown"
+        }
+        dialogView.findViewById<TextView>(R.id.tvAccuracy).text = accuracyText
+
+        // Online indicator
+        val onlineIndicator = dialogView.findViewById<View>(R.id.onlineIndicator)
+        if (userData.isReachable) {
+            onlineIndicator.setBackgroundColor(Color.parseColor("#10B981")) // Green
+        } else {
+            onlineIndicator.setBackgroundColor(Color.parseColor("#EF4444")) // Red
+        }
+
+        // Button actions
+        dialogView.findViewById<Button>(R.id.btnViewProfile).setOnClickListener {
+            // TODO: Navigate to user profile
+            Toast.makeText(this, "Profile view coming soon", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun formatLastActive(timestamp: String): String {
+        try {
+            // Parse ISO 8601 timestamp
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            val date = sdf.parse(timestamp) ?: return "Recently"
+
+            val now = System.currentTimeMillis()
+            val then = date.time
+            val diff = now - then
+
+            val seconds = diff / 1000
+            val minutes = seconds / 60
+            val hours = minutes / 60
+            val days = hours / 24
+
+            return when {
+                seconds < 60 -> "Just now"
+                minutes < 2 -> "1 minute ago"
+                minutes < 60 -> "$minutes minutes ago"
+                hours < 2 -> "1 hour ago"
+                hours < 24 -> "$hours hours ago"
+                days < 2 -> "Yesterday"
+                days < 7 -> "$days days ago"
+                else -> "Over a week ago"
+            }
+        } catch (e: Exception) {
+            return "Recently"
         }
     }
 
@@ -365,15 +524,13 @@ class Homepage : AppCompatActivity() {
     private fun expandMap() {
         isMapExpanded = true
 
-        // Create fullscreen dialog
-        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-            .create()
-
         val dialogView = layoutInflater.inflate(R.layout.dialog_expanded_map, null)
         val expandedMapView = dialogView.findViewById<MapView>(R.id.expanded_map_view)
         val closeButton = dialogView.findViewById<View>(R.id.btnCloseMap)
 
-        dialog.setView(dialogView)
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+            .setView(dialogView)
+            .create()
 
         // Initialize expanded map
         expandedMapView.onCreate(null)
@@ -383,6 +540,7 @@ class Homepage : AppCompatActivity() {
                 isAttributionEnabled = true
                 isCompassEnabled = true
                 isZoomGesturesEnabled = true
+                isRotateGesturesEnabled = true
             }
 
             expandedMap.setStyle(
@@ -393,23 +551,58 @@ class Homepage : AppCompatActivity() {
                     expandedMap.cameraPosition = position
                 }
 
-                // Add user location marker if available
-                val lastLocation = locationCoordinator.getTrackingStats().lastLocationTimestamp
-                if (lastLocation != null) {
-                    lifecycleScope.launch {
-                        val location = locationCoordinator.getLastKnownLocation()
-                        location?.let {
-                            val latLng = LatLng(it.latitude, it.longitude)
-                            addUserMarker(expandedMap, latLng, auth.currentUser?.displayName ?: "You")
+                // Add current user marker
+                currentUserLocation?.let { location ->
+                    val markerOptions = MarkerOptions()
+                        .position(location)
+                        .title("You")
+                        .snippet("Current location")
+                    expandedMap.addMarker(markerOptions)
+                }
 
-                            expandedMap.animateCamera(
-                                org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
-                                    latLng,
-                                    15.0
-                                )
-                            )
-                        }
+                // Add all user markers
+                userMarkers.forEach { (_, userData) ->
+                    try {
+                        val latLng = LatLng(userData.latitude, userData.longitude)
+                        val markerOptions = MarkerOptions()
+                            .position(latLng)
+                            .title(userData.name ?: userData.email.substringBefore("@"))
+                            .snippet(userData.currentArea ?: "Unknown Area")
+                        expandedMap.addMarker(markerOptions)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error adding marker in expanded map", e)
                     }
+                }
+
+                // Enable marker click listener
+                expandedMap.setOnMarkerClickListener { marker ->
+                    // Find userData by matching position
+                    val clickedUserData = userMarkers.values.find { user ->
+                        marker.position.latitude == user.latitude &&
+                                marker.position.longitude == user.longitude
+                    }
+
+                    if (clickedUserData != null) {
+                        showUserDetailsBottomSheet(clickedUserData)
+                        true
+                    } else {
+                        Toast.makeText(
+                            this@Homepage,
+                            "${marker.title}\n${marker.snippet}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        true
+                    }
+                }
+
+                // Animate to user location if available
+                currentUserLocation?.let { location ->
+                    expandedMap.animateCamera(
+                        org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                            location,
+                            DEFAULT_ZOOM
+                        )
+                    )
                 }
             }
         }
@@ -430,6 +623,20 @@ class Homepage : AppCompatActivity() {
 
     private fun collapseMap() {
         isMapExpanded = false
+    }
+
+    private fun checkTrackingStatus() {
+        val isTracking = locationCoordinator.isTracking()
+        val stats = locationCoordinator.getTrackingStats()
+
+        Log.d(TAG, """
+            === Current Tracking Status ===
+            Enabled: $isTracking
+            Activity: ${stats.currentActivityState}
+            Interval: ${stats.currentInterval}
+            WorkManager: ${stats.workManagerScheduled}
+            Last Location: ${stats.lastLocationTimestamp}
+        """.trimIndent())
     }
 
     private fun getGreeting(): String {
@@ -459,6 +666,19 @@ class Homepage : AppCompatActivity() {
 
         if (::locationCoordinator.isInitialized) {
             checkTrackingStatus()
+
+            // Refresh map with latest location
+            lifecycleScope.launch {
+                try {
+                    val location = locationCoordinator.getLastKnownLocation()
+                    if (location != null) {
+                        currentUserLocation = LatLng(location.latitude, location.longitude)
+                        loadNearbyUsersOnMap(location.latitude, location.longitude)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error refreshing map on resume", e)
+                }
+            }
         }
     }
 
