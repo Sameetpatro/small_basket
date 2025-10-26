@@ -8,17 +8,21 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityHomepageBinding
 import com.example.smallbasket.location.*
 import com.example.smallbasket.models.MapUserData
 import com.example.smallbasket.repository.MapRepository
+import com.example.smallbasket.utils.HeatmapStats
+import com.example.smallbasket.utils.MapUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
@@ -33,14 +37,13 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.delay
 
-
 class Homepage : AppCompatActivity() {
 
     companion object {
         private const val TAG = "Homepage"
         private const val DEFAULT_ZOOM = 15.0
         private const val MAP_RADIUS_METERS = 5000.0
-        private const val BACKEND_SYNC_DELAY = 3000L // 3 seconds for backend to process
+        private const val BACKEND_SYNC_DELAY = 3000L
     }
 
     private lateinit var auth: FirebaseAuth
@@ -123,7 +126,6 @@ class Homepage : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // Step 1: Get fresh location
                 Log.d(TAG, "Step 1: Getting fresh location...")
                 val freshLocation = locationCoordinator.getInstantLocation()
 
@@ -132,16 +134,12 @@ class Homepage : AppCompatActivity() {
                     currentUserLocation = LatLng(freshLocation.latitude, freshLocation.longitude)
                     updateMapWithLocation(freshLocation)
 
-                    // Step 2: CRITICAL - Wait for backend to process location
                     Log.d(TAG, "Step 2: Waiting ${BACKEND_SYNC_DELAY}ms for backend sync...")
-                    kotlinx.coroutines.delay(BACKEND_SYNC_DELAY)
+                    delay(BACKEND_SYNC_DELAY)
 
-                    // Step 3: Query nearby users
                     Log.d(TAG, "Step 3: Querying nearby users...")
                     loadNearbyUsersOnMap(freshLocation.latitude, freshLocation.longitude)
-
                 } else {
-                    // Fallback to cached location
                     Log.w(TAG, "Could not get fresh location, trying cached...")
                     val cachedLocation = locationCoordinator.getLastKnownLocation()
 
@@ -149,8 +147,7 @@ class Homepage : AppCompatActivity() {
                         Log.d(TAG, "Using cached location")
                         currentUserLocation = LatLng(cachedLocation.latitude, cachedLocation.longitude)
                         updateMapWithLocation(cachedLocation)
-
-                        kotlinx.coroutines.delay(BACKEND_SYNC_DELAY)
+                        delay(BACKEND_SYNC_DELAY)
                         loadNearbyUsersOnMap(cachedLocation.latitude, cachedLocation.longitude)
                     } else {
                         Log.e(TAG, "No location available at all")
@@ -193,13 +190,10 @@ class Homepage : AppCompatActivity() {
             locationCoordinator = LocationTrackingCoordinator.getInstance(this)
             permissionManager = LocationPermissionManager(this)
             permissionManager.setPermissionLauncher(permissionLauncher)
-
-            // CRITICAL: Initialize connectivity manager with applicationContext
             connectivityManager = ConnectivityStatusManager.getInstance(applicationContext)
 
             Log.d(TAG, "✓ Location coordinator and connectivity manager initialized")
             checkAndStartTracking()
-
         } catch (e: Exception) {
             Log.e(TAG, "✗ Error initializing location tracking", e)
             Toast.makeText(this, "Location setup failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -246,20 +240,16 @@ class Homepage : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // CRITICAL: Start connectivity monitoring FIRST
                 Log.i(TAG, "STEP 1: Starting connectivity monitoring...")
                 connectivityManager.startMonitoring()
 
-                // Wait for connectivity to sync with backend
                 Log.i(TAG, "STEP 2: Waiting 3 seconds for connectivity sync...")
                 delay(3000)
 
-                // Start background tracking
                 Log.i(TAG, "STEP 3: Starting background location tracking...")
                 locationCoordinator.startTracking()
                 Log.d(TAG, "✓ Background tracking started")
 
-                // Get instant location WITH sync
                 Log.i(TAG, "STEP 4: Getting instant location...")
                 val location = locationCoordinator.getInstantLocation()
 
@@ -268,11 +258,9 @@ class Homepage : AppCompatActivity() {
                     currentUserLocation = LatLng(location.latitude, location.longitude)
                     updateMapWithLocation(location)
 
-                    // CRITICAL: Wait for backend to process
                     Log.d(TAG, "STEP 5: Waiting ${BACKEND_SYNC_DELAY}ms for backend to sync location...")
-                    kotlinx.coroutines.delay(BACKEND_SYNC_DELAY)
+                    delay(BACKEND_SYNC_DELAY)
 
-                    // NOW load nearby users
                     Log.d(TAG, "STEP 6: Loading nearby users...")
                     showLoadingState(true)
                     loadNearbyUsersOnMap(location.latitude, location.longitude)
@@ -285,7 +273,7 @@ class Homepage : AppCompatActivity() {
                     if (lastLocation != null) {
                         currentUserLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
                         updateMapWithLocation(lastLocation)
-                        kotlinx.coroutines.delay(BACKEND_SYNC_DELAY)
+                        delay(BACKEND_SYNC_DELAY)
                         showLoadingState(true)
                         loadNearbyUsersOnMap(lastLocation.latitude, lastLocation.longitude)
                     } else {
@@ -293,7 +281,6 @@ class Homepage : AppCompatActivity() {
                         Toast.makeText(this@Homepage, "Unable to get location", Toast.LENGTH_LONG).show()
                     }
                 }
-
             } catch (e: Exception) {
                 Log.e(TAG, "✗ Error starting tracking", e)
                 showLoadingState(false)
@@ -315,7 +302,6 @@ class Homepage : AppCompatActivity() {
             )
 
             map?.let { addCurrentUserMarker(it, latLng) }
-
         } catch (e: Exception) {
             Log.e(TAG, "Error updating map", e)
         }
@@ -329,7 +315,7 @@ class Homepage : AppCompatActivity() {
                 .snippet("Current location")
 
             mapInstance.addMarker(markerOptions)
-            Log.d(TAG, "Added current user marker")
+            Log.d(TAG, "✓ Added YOUR red pointer marker")
         } catch (e: Exception) {
             Log.e(TAG, "Error adding marker", e)
         }
@@ -367,7 +353,6 @@ class Homepage : AppCompatActivity() {
                 }
 
                 showLoadingState(false)
-
             } catch (e: Exception) {
                 Log.e(TAG, "Exception loading users", e)
                 binding.tvOnlineUsers.text = "0"
@@ -379,37 +364,39 @@ class Homepage : AppCompatActivity() {
 
     private fun displayUsersOnMap(users: List<MapUserData>) {
         map?.let { mapInstance ->
-            // Clear existing markers
+            Log.d(TAG, "🗺️ Displaying ${users.size} users on map with HEATMAP")
+
+            // Clear old user markers (KEEP your red pointer)
             userMarkers.keys.forEach { marker ->
                 mapInstance.removeMarker(marker)
             }
             userMarkers.clear()
 
-            Log.d(TAG, "Displaying ${users.size} users on map")
+            // Add HEATMAP overlay directly on the map
+            MapUtils.addHeatmapLayer(mapInstance, users, currentUserLocation)
 
-            // Add markers for each user
-            users.forEach { user ->
-                try {
-                    val latLng = LatLng(user.latitude, user.longitude)
+            // Get statistics for logging
+            val stats = MapUtils.getHeatmapStats(users, currentUserLocation)
 
-                    val markerOptions = MarkerOptions()
-                        .position(latLng)
-                        .title(user.name ?: user.email.substringBefore("@"))
-                        .snippet(user.currentArea ?: "Unknown Area")
-
-                    val marker = mapInstance.addMarker(markerOptions)
-                    userMarkers[marker] = user
-
-                    Log.d(TAG, "✓ Added marker for ${user.name ?: user.email}")
-                } catch (e: Exception) {
-                    Log.e(TAG, "✗ Error adding marker for ${user.uid}", e)
+            Log.d(TAG, "✓ Heatmap rendered on map!")
+            Log.d(TAG, "  🔥 Heatmap points: ${stats.totalUsers}")
+            Log.d(TAG, "  📍 Your red pointer: visible")
+            Log.d(TAG, "  🎨 Color zones:")
+            stats.topAreas.forEach { (area, count) ->
+                val intensity = when {
+                    count >= 30 -> "🔴 HIGH"
+                    count >= 20 -> "🟠 MEDIUM-HIGH"
+                    count >= 10 -> "🟡 MEDIUM"
+                    count >= 5 -> "🟢 LOW-MEDIUM"
+                    else -> "🔵 LOW"
                 }
+                Log.d(TAG, "    $intensity - $area: $count users")
             }
 
-            // Update count
+            // Update user count
             binding.tvOnlineUsers.text = users.size.toString()
 
-            Log.d(TAG, "✓ Displayed ${users.size} users successfully")
+            Log.d(TAG, "✓ Map rendering complete: Heatmap + Red Pointer")
         } ?: run {
             Log.w(TAG, "Map not initialized")
         }
@@ -459,81 +446,12 @@ class Homepage : AppCompatActivity() {
                     .build()
 
                 mapLibreMap.setOnMarkerClickListener { marker ->
-                    val userData = userMarkers[marker]
-                    if (userData != null) {
-                        showUserDetailsBottomSheet(userData)
-                        true
-                    } else {
-                        Toast.makeText(this@Homepage, "${marker.title}\n${marker.snippet}", Toast.LENGTH_SHORT).show()
-                        true
-                    }
+                    Toast.makeText(this@Homepage, "${marker.title}\n${marker.snippet}", Toast.LENGTH_SHORT).show()
+                    true
                 }
 
                 Log.d(TAG, "Map initialized successfully")
             }
-        }
-    }
-
-    private fun showUserDetailsBottomSheet(userData: MapUserData) {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.bottom_sheet_user_marker, null)
-        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        dialogView.findViewById<TextView>(R.id.tvUserName).text =
-            userData.name ?: userData.email.substringBefore("@")
-        dialogView.findViewById<TextView>(R.id.tvUserEmail).text = userData.email
-        dialogView.findViewById<TextView>(R.id.tvCurrentArea).text =
-            userData.currentArea ?: "Unknown"
-
-        val lastActiveText = if (userData.lastUpdated != null) {
-            try { formatLastActive(userData.lastUpdated) } catch (e: Exception) { "Recently active" }
-        } else "Recently active"
-        dialogView.findViewById<TextView>(R.id.tvLastActive).text = lastActiveText
-
-        val accuracyText = if (userData.accuracy != null) "±${userData.accuracy.toInt()}m" else "Unknown"
-        dialogView.findViewById<TextView>(R.id.tvAccuracy).text = accuracyText
-
-        val onlineIndicator = dialogView.findViewById<View>(R.id.onlineIndicator)
-        onlineIndicator.setBackgroundColor(
-            if (userData.isReachable) Color.parseColor("#10B981") else Color.parseColor("#EF4444")
-        )
-
-        dialogView.findViewById<Button>(R.id.btnViewProfile).setOnClickListener {
-            Toast.makeText(this, "Profile view coming soon", Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
-        }
-
-        dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
-    private fun formatLastActive(timestamp: String): String {
-        try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            sdf.timeZone = TimeZone.getTimeZone("UTC")
-            val date = sdf.parse(timestamp) ?: return "Recently"
-
-            val diff = System.currentTimeMillis() - date.time
-            val seconds = diff / 1000
-            val minutes = seconds / 60
-            val hours = minutes / 60
-            val days = hours / 24
-
-            return when {
-                seconds < 60 -> "Just now"
-                minutes < 2 -> "1 minute ago"
-                minutes < 60 -> "$minutes minutes ago"
-                hours < 2 -> "1 hour ago"
-                hours < 24 -> "$hours hours ago"
-                days < 2 -> "Yesterday"
-                days < 7 -> "$days days ago"
-                else -> "Over a week ago"
-            }
-        } catch (e: Exception) {
-            return "Recently"
         }
     }
 
@@ -550,7 +468,6 @@ class Homepage : AppCompatActivity() {
 
     private fun expandMap() {
         isMapExpanded = true
-        // Implementation remains the same
     }
 
     private fun collapseMap() {
@@ -586,7 +503,7 @@ class Homepage : AppCompatActivity() {
                     if (location != null) {
                         currentUserLocation = LatLng(location.latitude, location.longitude)
                         showLoadingState(true)
-                        kotlinx.coroutines.delay(BACKEND_SYNC_DELAY)
+                        delay(BACKEND_SYNC_DELAY)
                         loadNearbyUsersOnMap(location.latitude, location.longitude)
                     }
                 } catch (e: Exception) {
@@ -614,6 +531,7 @@ class Homepage : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        map?.let { MapUtils.removeHeatmapLayer(it) }
         mapView?.onDestroy()
     }
 
