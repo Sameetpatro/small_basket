@@ -2,11 +2,15 @@
 package com.example.smallbasket
 
 import android.content.Intent
+import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityHomepageBinding
@@ -19,6 +23,8 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+import org.maplibre.android.annotations.MarkerOptions
+import org.maplibre.android.annotations.IconFactory
 import java.util.Calendar
 
 class Homepage : AppCompatActivity() {
@@ -31,6 +37,7 @@ class Homepage : AppCompatActivity() {
     private lateinit var binding: ActivityHomepageBinding
     private var mapView: MapView? = null
     private var map: MapLibreMap? = null
+    private var isMapExpanded = false
 
     // Location tracking components
     private lateinit var locationCoordinator: LocationTrackingCoordinator
@@ -46,7 +53,10 @@ class Homepage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Initialize MapLibre BEFORE setting content view
         MapLibre.getInstance(this)
+
         enableEdgeToEdge()
 
         auth = FirebaseAuth.getInstance()
@@ -60,6 +70,7 @@ class Homepage : AppCompatActivity() {
         setupUI()
         initializeMap(savedInstanceState)
         setupCustomBottomNav()
+        setupMapClickListener()
     }
 
     private fun setupUI() {
@@ -87,14 +98,11 @@ class Homepage : AppCompatActivity() {
         Log.d(TAG, "=== Initializing Location Tracking ===")
 
         try {
-            // Get instances
             locationCoordinator = LocationTrackingCoordinator.getInstance(this)
             permissionManager = LocationPermissionManager(this)
             permissionManager.setPermissionLauncher(permissionLauncher)
 
             Log.d(TAG, "Location coordinator and permission manager initialized")
-
-            // Start the permission and tracking flow
             checkAndStartTracking()
 
         } catch (e: Exception) {
@@ -110,7 +118,6 @@ class Homepage : AppCompatActivity() {
     private fun checkAndStartTracking() {
         Log.d(TAG, "=== Checking Permissions and Starting Tracking ===")
 
-        // Check if all permissions are granted
         val hasPermissions = permissionManager.hasAllPermissions()
         val locationEnabled = LocationUtils.isLocationEnabled(this)
 
@@ -163,7 +170,6 @@ class Homepage : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // Start background tracking
                 Log.d(TAG, "Calling coordinator.startTracking()")
                 locationCoordinator.startTracking()
 
@@ -229,16 +235,36 @@ class Homepage : AppCompatActivity() {
 
             Log.d(TAG, "Updating map to location: $latLng (accuracy: ${location.accuracy}m)")
 
-            map?.animateCamera(
-                org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
-                    latLng,
-                    15.0
-                ),
-                1000
-            )
+            map?.let { mapInstance ->
+                // Animate camera to user location
+                mapInstance.animateCamera(
+                    org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                        latLng,
+                        15.0
+                    ),
+                    1000
+                )
+
+                // Add marker for user location
+                addUserMarker(mapInstance, latLng, auth.currentUser?.displayName ?: "You")
+            }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error updating map location", e)
+        }
+    }
+
+    private fun addUserMarker(mapInstance: MapLibreMap, latLng: LatLng, userName: String) {
+        try {
+            val markerOptions = MarkerOptions()
+                .position(latLng)
+                .title(userName)
+                .snippet("Last updated: ${System.currentTimeMillis()}")
+
+            mapInstance.addMarker(markerOptions)
+            Log.d(TAG, "Added marker for $userName at $latLng")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error adding marker", e)
         }
     }
 
@@ -256,7 +282,7 @@ class Homepage : AppCompatActivity() {
         """.trimIndent())
     }
 
-    // ====================================================
+    // ============ MAP METHODS ============
 
     private fun setupCustomBottomNav() {
         binding.navHome.setOnClickListener {
@@ -282,16 +308,24 @@ class Homepage : AppCompatActivity() {
 
         mapView?.getMapAsync { mapLibreMap ->
             map = mapLibreMap
-            mapLibreMap.uiSettings.isLogoEnabled = false
-            mapLibreMap.uiSettings.isAttributionEnabled = true
-            mapLibreMap.uiSettings.attributionGravity =
-                android.view.Gravity.BOTTOM or android.view.Gravity.END
-            mapLibreMap.uiSettings.setAttributionMargins(0, 0, 8, 8)
-            mapLibreMap.uiSettings.isRotateGesturesEnabled = false
 
+            // Configure map UI settings
+            mapLibreMap.uiSettings.apply {
+                isLogoEnabled = false
+                isAttributionEnabled = true
+                attributionGravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
+                setAttributionMargins(0, 0, 8, 8)
+                isRotateGesturesEnabled = false
+                isCompassEnabled = true
+                isZoomGesturesEnabled = false
+            }
+
+            // Load map style
             mapLibreMap.setStyle(
                 Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
-            ) {
+            ) { style ->
+                Log.d(TAG, "Map style loaded successfully")
+
                 // Default to Delhi initially
                 val delhi = LatLng(28.6139, 77.2090)
                 mapLibreMap.cameraPosition = CameraPosition.Builder()
@@ -299,9 +333,103 @@ class Homepage : AppCompatActivity() {
                     .zoom(12.0)
                     .build()
 
+                // Enable info window for markers
+                mapLibreMap.setOnMarkerClickListener { marker ->
+                    Toast.makeText(
+                        this@Homepage,
+                        "${marker.title}\n${marker.snippet}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    true
+                }
+
                 Log.d(TAG, "Map initialized successfully")
             }
         }
+    }
+
+    private fun setupMapClickListener() {
+        binding.mapCard.setOnClickListener {
+            toggleMapSize()
+        }
+    }
+
+    private fun toggleMapSize() {
+        if (isMapExpanded) {
+            collapseMap()
+        } else {
+            expandMap()
+        }
+    }
+
+    private fun expandMap() {
+        isMapExpanded = true
+
+        // Create fullscreen dialog
+        val dialog = AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+            .create()
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_expanded_map, null)
+        val expandedMapView = dialogView.findViewById<MapView>(R.id.expanded_map_view)
+        val closeButton = dialogView.findViewById<View>(R.id.btnCloseMap)
+
+        dialog.setView(dialogView)
+
+        // Initialize expanded map
+        expandedMapView.onCreate(null)
+        expandedMapView.getMapAsync { expandedMap ->
+            expandedMap.uiSettings.apply {
+                isLogoEnabled = false
+                isAttributionEnabled = true
+                isCompassEnabled = true
+                isZoomGesturesEnabled = true
+            }
+
+            expandedMap.setStyle(
+                Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
+            ) {
+                // Copy current camera position from main map
+                map?.cameraPosition?.let { position ->
+                    expandedMap.cameraPosition = position
+                }
+
+                // Add user location marker if available
+                val lastLocation = locationCoordinator.getTrackingStats().lastLocationTimestamp
+                if (lastLocation != null) {
+                    lifecycleScope.launch {
+                        val location = locationCoordinator.getLastKnownLocation()
+                        location?.let {
+                            val latLng = LatLng(it.latitude, it.longitude)
+                            addUserMarker(expandedMap, latLng, auth.currentUser?.displayName ?: "You")
+
+                            expandedMap.animateCamera(
+                                org.maplibre.android.camera.CameraUpdateFactory.newLatLngZoom(
+                                    latLng,
+                                    15.0
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        closeButton.setOnClickListener {
+            expandedMapView.onDestroy()
+            dialog.dismiss()
+            isMapExpanded = false
+        }
+
+        dialog.setOnDismissListener {
+            expandedMapView.onDestroy()
+            isMapExpanded = false
+        }
+
+        dialog.show()
+    }
+
+    private fun collapseMap() {
+        isMapExpanded = false
     }
 
     private fun getGreeting(): String {
@@ -329,7 +457,6 @@ class Homepage : AppCompatActivity() {
         mapView?.onResume()
         Log.d(TAG, "onResume()")
 
-        // Check tracking status when app resumes
         if (::locationCoordinator.isInitialized) {
             checkTrackingStatus()
         }
