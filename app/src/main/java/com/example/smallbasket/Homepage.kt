@@ -60,6 +60,9 @@ class Homepage : AppCompatActivity() {
     // Current user location
     private var currentUserLocation: LatLng? = null
 
+    // Loading state
+    private var isLoadingNearbyUsers = false
+
     // Permission launcher
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -88,6 +91,7 @@ class Homepage : AppCompatActivity() {
         initializeMap(savedInstanceState)
         setupCustomBottomNav()
         setupMapClickListener()
+        setupRefreshButton()
     }
 
     private fun setupUI() {
@@ -106,6 +110,84 @@ class Homepage : AppCompatActivity() {
 
         binding.notification.setOnClickListener {
             startActivity(Intent(this, NotificationActivity::class.java))
+        }
+    }
+
+    // ============ REFRESH FUNCTIONALITY ============
+
+    private fun setupRefreshButton() {
+        // Add click listener to both refresh button and online users card
+        binding.btnRefreshUsers.setOnClickListener {
+            refreshNearbyUsers()
+        }
+
+        binding.onlineUsersCard.setOnClickListener {
+            refreshNearbyUsers()
+        }
+    }
+
+    private fun refreshNearbyUsers() {
+        if (isLoadingNearbyUsers) {
+            Log.d(TAG, "Already loading, skipping refresh")
+            return
+        }
+
+        currentUserLocation?.let { location ->
+            Log.d(TAG, "Manual refresh triggered")
+            showLoadingState(true)
+            loadNearbyUsersOnMap(location.latitude, location.longitude)
+        } ?: run {
+            Toast.makeText(
+                this,
+                "Getting your location first...",
+                Toast.LENGTH_SHORT
+            ).show()
+
+            // Try to get location first
+            lifecycleScope.launch {
+                try {
+                    val location = locationCoordinator.getInstantLocation()
+                    if (location != null) {
+                        currentUserLocation = LatLng(location.latitude, location.longitude)
+                        updateMapWithLocation(location)
+                        loadNearbyUsersOnMap(location.latitude, location.longitude)
+                    } else {
+                        Toast.makeText(
+                            this@Homepage,
+                            "Unable to get location. Please check permissions.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        showLoadingState(false)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error getting location for refresh", e)
+                    Toast.makeText(
+                        this@Homepage,
+                        "Error: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    showLoadingState(false)
+                }
+            }
+        }
+    }
+
+    private fun showLoadingState(loading: Boolean) {
+        isLoadingNearbyUsers = loading
+
+        binding.apply {
+            if (loading) {
+                // Show loading indicator
+                progressBar.visibility = View.VISIBLE
+                tvOnlineUsers.text = "..."
+
+                // Add pulsing animation to online users card
+                onlineUsersCard.alpha = 0.7f
+            } else {
+                // Hide loading indicator
+                progressBar.visibility = View.GONE
+                onlineUsersCard.alpha = 1.0f
+            }
         }
     }
 
@@ -201,7 +283,8 @@ class Homepage : AppCompatActivity() {
                     currentUserLocation = LatLng(location.latitude, location.longitude)
                     updateMapWithLocation(location)
 
-                    // Load nearby users on map
+                    // Load nearby users on map with loading state
+                    showLoadingState(true)
                     loadNearbyUsersOnMap(location.latitude, location.longitude)
 
                     Toast.makeText(
@@ -217,9 +300,11 @@ class Homepage : AppCompatActivity() {
                         Log.d(TAG, "Using last known location")
                         currentUserLocation = LatLng(lastLocation.latitude, lastLocation.longitude)
                         updateMapWithLocation(lastLocation)
+                        showLoadingState(true)
                         loadNearbyUsersOnMap(lastLocation.latitude, lastLocation.longitude)
                     } else {
                         Log.w(TAG, "No location available")
+                        showLoadingState(false)
                     }
                 }
 
@@ -230,6 +315,7 @@ class Homepage : AppCompatActivity() {
                     "Location permission error: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
+                showLoadingState(false)
             } catch (e: Exception) {
                 Log.e(TAG, "Error starting location tracking", e)
                 Toast.makeText(
@@ -237,6 +323,7 @@ class Homepage : AppCompatActivity() {
                     "Error starting location tracking: ${e.message}",
                     Toast.LENGTH_LONG
                 ).show()
+                showLoadingState(false)
             }
         }
     }
@@ -287,23 +374,52 @@ class Homepage : AppCompatActivity() {
     // ============ MAP FUNCTIONALITY ============
 
     private fun loadNearbyUsersOnMap(latitude: Double, longitude: Double) {
-        Log.d(TAG, "Loading nearby users on map")
+        Log.d(TAG, "Loading nearby users on map for location: ($latitude, $longitude)")
 
         lifecycleScope.launch {
             try {
+                showLoadingState(true)
+
                 val result = mapRepository.getNearbyUsers(latitude, longitude, MAP_RADIUS_METERS)
 
                 result.onSuccess { response ->
-                    Log.d(TAG, "Found ${response.total} nearby users")
+                    Log.d(TAG, "✓ Found ${response.total} nearby users")
+                    Log.d(TAG, "Users list: ${response.users.map { it.name ?: it.email }}")
+
                     displayUsersOnMap(response.users)
+
+                    Toast.makeText(
+                        this@Homepage,
+                        "Found ${response.total} deliverers nearby",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
 
                 result.onFailure { error ->
-                    Log.e(TAG, "Error loading nearby users: ${error.message}")
+                    Log.e(TAG, "✗ Error loading nearby users: ${error.message}")
+
+                    // Show error message
+                    Toast.makeText(
+                        this@Homepage,
+                        "Error loading users: ${error.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    // Set count to 0
+                    binding.tvOnlineUsers.text = "0"
                 }
+
+                showLoadingState(false)
 
             } catch (e: Exception) {
                 Log.e(TAG, "Exception loading nearby users", e)
+                Toast.makeText(
+                    this@Homepage,
+                    "Exception: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                binding.tvOnlineUsers.text = "0"
+                showLoadingState(false)
             }
         }
     }
@@ -315,6 +431,8 @@ class Homepage : AppCompatActivity() {
                 mapInstance.removeMarker(marker)
             }
             userMarkers.clear()
+
+            Log.d(TAG, "Displaying ${users.size} users on map")
 
             // Add markers for each user
             users.forEach { user ->
@@ -329,16 +447,18 @@ class Homepage : AppCompatActivity() {
                     val marker = mapInstance.addMarker(markerOptions)
                     userMarkers[marker] = user
 
-                    Log.d(TAG, "Added marker for ${user.name} at $latLng")
+                    Log.d(TAG, "✓ Added marker for ${user.name ?: user.email} at $latLng")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error adding marker for user ${user.uid}", e)
+                    Log.e(TAG, "✗ Error adding marker for user ${user.uid}", e)
                 }
             }
 
             // Update online users count
             binding.tvOnlineUsers.text = users.size.toString()
 
-            Log.d(TAG, "Displayed ${users.size} users on map")
+            Log.d(TAG, "✓ Successfully displayed ${users.size} users on map")
+        } ?: run {
+            Log.w(TAG, "Map not initialized, cannot display users")
         }
     }
 
@@ -368,7 +488,6 @@ class Homepage : AppCompatActivity() {
             map = mapLibreMap
 
             // Configure map UI settings
-            // Configure map UI settings
             mapLibreMap.uiSettings.apply {
                 isLogoEnabled = false
                 isAttributionEnabled = true
@@ -377,8 +496,8 @@ class Homepage : AppCompatActivity() {
                 isRotateGesturesEnabled = true
                 isCompassEnabled = true
                 isZoomGesturesEnabled = true
-                isScrollGesturesEnabled = true  // Enable panning/dragging
-                isTiltGesturesEnabled = true     // Enable tilting
+                isScrollGesturesEnabled = true
+                isTiltGesturesEnabled = true
             }
 
             // Load map style with street view
@@ -394,15 +513,13 @@ class Homepage : AppCompatActivity() {
                     .zoom(12.0)
                     .build()
 
-                // Enable marker click listener to show user details
-                // Enable marker click listener to show user details
+                // Enable marker click listener
                 mapLibreMap.setOnMarkerClickListener { marker ->
                     val userData = userMarkers[marker]
                     if (userData != null) {
                         showUserDetailsBottomSheet(userData)
                         true
                     } else {
-                        // Current user marker or other marker
                         Toast.makeText(
                             this@Homepage,
                             "${marker.title}\n${marker.snippet}",
@@ -517,9 +634,6 @@ class Homepage : AppCompatActivity() {
             Log.d(TAG, "Map card clicked - expanding map")
             toggleMapSize()
         }
-
-        // Remove the map view click listener so markers can be clicked
-        // binding.mapView.setOnClickListener will interfere with marker clicks
     }
 
     private fun toggleMapSize() {
@@ -550,8 +664,8 @@ class Homepage : AppCompatActivity() {
                 isCompassEnabled = true
                 isZoomGesturesEnabled = true
                 isRotateGesturesEnabled = true
-                isScrollGesturesEnabled = true  // Enable panning/dragging
-                isTiltGesturesEnabled = true     // Enable tilting
+                isScrollGesturesEnabled = true
+                isTiltGesturesEnabled = true
             }
 
             expandedMap.setStyle(
@@ -587,7 +701,6 @@ class Homepage : AppCompatActivity() {
 
                 // Enable marker click listener
                 expandedMap.setOnMarkerClickListener { marker ->
-                    // Find userData by matching position
                     val clickedUserData = userMarkers.values.find { user ->
                         marker.position.latitude == user.latitude &&
                                 marker.position.longitude == user.longitude
@@ -684,10 +797,12 @@ class Homepage : AppCompatActivity() {
                     val location = locationCoordinator.getLastKnownLocation()
                     if (location != null) {
                         currentUserLocation = LatLng(location.latitude, location.longitude)
+                        showLoadingState(true)
                         loadNearbyUsersOnMap(location.latitude, location.longitude)
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error refreshing map on resume", e)
+                    showLoadingState(false)
                 }
             }
         }
