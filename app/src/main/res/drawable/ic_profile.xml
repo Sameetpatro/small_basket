@@ -6,11 +6,11 @@
 
     <!-- User head -->
     <path
-        android:fillColor="#FF5722"
+        android:fillColor="#009688"
         android:pathData="M24,21c3.314,0 6,-2.686 6,-6s-2.686,-6 -6,-6s-6,2.686 -6,6S20.686,21 24,21z"/>
 
     <!-- User body -->
     <path
-        android:fillColor="#FF5722"
+        android:fillColor="#009688"
         android:pathData="M24,25c-5.333,0 -16,2.667 -16,8v2c0,1.105 0.895,2 2,2h28c1.105,0 2,-0.895 2,-2v-2C40,27.667 29.333,25 24,25z"/>
 </vector>

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.PopupMenu
 import androidx.lifecycle.lifecycleScope
 import com.example.smallbasket.databinding.ActivityProfileBinding
 import com.example.smallbasket.repository.OrderRepository
@@ -31,32 +30,50 @@ class ProfileActivity : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
         val user = auth.currentUser
 
+        setupClickListeners()
+
         if (user != null) {
             // Display basic Firebase Auth data
-            binding.tvProfileName.text = user.displayName ?: "User"
-            binding.tvProfileEmail.text = user.email ?: "No email"
+            val displayName = user.displayName ?: "User"
+            binding.tvProfileName.text = displayName
+            binding.tvFullName.text = displayName
+            binding.tvEmailAddress.text = user.email ?: "No email"
 
             user.metadata?.creationTimestamp?.let { timestamp ->
                 binding.tvJoiningDate.text =
-                    "Joined: ${SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(Date(timestamp))}"
+                    SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(Date(timestamp))
             }
 
             // Load phone number from Firestore
             loadUserDataFromFirestore(user.uid)
 
-            // 🔽 New: Decode student info from email and display
+            // Decode student info from email and display
             user.email?.let { email ->
                 parseEmailAndShowDetails(email)
             }
 
             // Load user stats
             loadUserStats()
+        } else {
+            // User not logged in, redirect to MainActivity
+            redirectToLogin()
+        }
+    }
+
+    private fun setupClickListeners() {
+        binding.btnBack.setOnClickListener {
+            finish()
         }
 
-        binding.menuIcon.setOnClickListener { showMenu() }
+        binding.btnEditProfile.setOnClickListener {
+            Toast.makeText(this, "Edit Profile coming soon", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun loadUserDataFromFirestore(uid: String) {
+        // Set default immediately
+        binding.tvMobileNumber.text = "Not set"
+
         lifecycleScope.launch {
             try {
                 val document = firestore.collection("users")
@@ -65,111 +82,126 @@ class ProfileActivity : AppCompatActivity() {
                     .await()
 
                 if (document.exists()) {
-                    val phone = document.getString("phone") ?: "Not set"
+                    val phone = document.getString("phone")
                     val name = document.getString("name")
-                    binding.tvProfileMobile.text = "Mobile: $phone"
 
+                    // Update phone number
+                    binding.tvMobileNumber.text = phone ?: "Not set"
+
+                    // Update name if available
                     if (!name.isNullOrEmpty()) {
                         binding.tvProfileName.text = name
+                        binding.tvFullName.text = name
                     }
                 } else {
-                    binding.tvProfileMobile.text = "Mobile: Not available"
+                    binding.tvMobileNumber.text = "Not available"
                 }
             } catch (e: Exception) {
-                binding.tvProfileMobile.text = "Mobile: Error loading"
+                binding.tvMobileNumber.text = "Error loading"
                 println("Error loading user data: ${e.message}")
             }
         }
     }
 
     private fun loadUserStats() {
+        // Set defaults immediately
+        binding.tvStatDeliveries.text = "0"
+        binding.tvStatOrders.text = "0"
+        binding.tvStatEarned.text = "₹0"
+
         lifecycleScope.launch {
-            val result = repository.getUserStats("")
-            result.onSuccess { stats ->
-                val statsText =
-                    "Orders: ${stats.totalOrders} | Active: ${stats.activeOrders} | Completed: ${stats.completedDeliveries}"
-                Toast.makeText(this@ProfileActivity, statsText, Toast.LENGTH_SHORT).show()
-            }
-            result.onFailure { error ->
-                println("Stats error: ${error.message}")
-            }
-        }
-    }
+            try {
+                val result = repository.getUserStats(auth.currentUser?.uid ?: "")
+                result.onSuccess { stats ->
+                    // Update UI with stats
+                    binding.tvStatDeliveries.text = stats.completedDeliveries.toString()
+                    binding.tvStatOrders.text = stats.totalOrders.toString()
 
-    private fun showMenu() {
-        val popup = PopupMenu(this, binding.menuIcon)
-        popup.menu.add("Edit Profile")
-        popup.menu.add("Sign Out")
-        popup.menu.add("Contact Developers")
-
-        popup.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.title) {
-                "Sign Out" -> {
-                    auth.signOut()
-                    val intent = Intent(this, MainActivity::class.java)
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    finish()
-                    true
+                    // Calculate total earned based on completed deliveries
+                    val totalEarned = stats.completedDeliveries * 10
+                    binding.tvStatEarned.text = "₹$totalEarned"
                 }
-                else -> true
+                result.onFailure { error ->
+                    println("Stats error: ${error.message}")
+                }
+            } catch (e: Exception) {
+                println("Exception loading stats: ${e.message}")
             }
         }
-        popup.show()
     }
 
-    // 🔽 New Function: Parse and display student info from email
+    private fun redirectToLogin() {
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
     private fun parseEmailAndShowDetails(email: String) {
         val username = email.substringBefore("@")
         val pattern = Pattern.compile("(\\d{8})")
         val matcher = pattern.matcher(username)
-        if (!matcher.find()) return
 
-        val digits = matcher.group(1) ?: return
-        if (digits.length != 8) return
-
-        val admissionDigit = digits[0]
-        val batchSuffix = digits.substring(1, 3)
-        val branchCode = digits.substring(3, 5)
-        val rollStr = digits.substring(5, 8)
-
-        val batchStartYear = 2000 + batchSuffix.toIntOrNull()!!
-        val rollNumber = rollStr.toIntOrNull() ?: 0
-
-        val branch = when (branchCode) {
-            "11" -> "Computer Science (CSE)"
-            "12" -> "Information Technology (IT)"
-            "13" -> "Data Science"
-            else -> "Unknown Branch"
+        if (!matcher.find()) {
+            // Not a student email format, hide student info section
+            binding.cardStudentInfo.visibility = View.GONE
+            return
         }
 
-        val section =
-            if (branchCode == "11") { // only for CSE
+        val digits = matcher.group(1) ?: return
+        if (digits.length != 8) {
+            binding.cardStudentInfo.visibility = View.GONE
+            return
+        }
+
+        try {
+            val admissionDigit = digits[0]
+            val batchSuffix = digits.substring(1, 3)
+            val branchCode = digits.substring(3, 5)
+            val rollStr = digits.substring(5, 8)
+
+            val batchStartYear = 2000 + batchSuffix.toInt()
+            val rollNumber = rollStr.toInt()
+
+            val branch = when (branchCode) {
+                "11" -> "Computer Science (CSE)"
+                "12" -> "Information Technology (IT)"
+                "13" -> "Data Science"
+                else -> "Unknown Branch"
+            }
+
+            val section = if (branchCode == "11") {
                 if (rollNumber > 60) "B" else "A"
             } else null
 
-        val isDasa = admissionDigit == '2'
+            val isDasa = admissionDigit == '2'
 
-        // Update UI
-        binding.tvBatch.apply {
-            text = "Batch: $batchStartYear–${batchStartYear + 4}"
-            visibility = View.VISIBLE
-        }
+            // Show student info card
+            binding.cardStudentInfo.visibility = View.VISIBLE
 
-        binding.tvBranch.apply {
-            text = "Branch: $branch"
-            visibility = View.VISIBLE
-        }
+            // Update UI - Batch
+            binding.layoutBatch.visibility = View.VISIBLE
+            binding.tvBatch.text = "Batch: $batchStartYear–${batchStartYear + 4}"
 
-        section?.let {
-            binding.tvSection.text = "Section: $it"
-            binding.tvSection.visibility = View.VISIBLE
-        }
+            // Update UI - Branch
+            binding.layoutBranch.visibility = View.VISIBLE
+            binding.tvBranch.text = "Branch: $branch"
 
-        if (isDasa) {
-            binding.tvDasa.visibility = View.VISIBLE
-        } else {
-            binding.tvDasa.visibility = View.GONE
+            // Update UI - Section
+            section?.let {
+                binding.layoutSection.visibility = View.VISIBLE
+                binding.tvSection.text = "Section: $it"
+            }
+
+            // Update UI - DASA
+            if (isDasa) {
+                binding.layoutDasa.visibility = View.VISIBLE
+            } else {
+                binding.layoutDasa.visibility = View.GONE
+            }
+        } catch (e: Exception) {
+            println("Error parsing email: ${e.message}")
+            binding.cardStudentInfo.visibility = View.GONE
         }
     }
 }

@@ -22,41 +22,61 @@ class Homepage : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Initialize MapLibre
         MapLibre.getInstance(this)
-
         enableEdgeToEdge()
 
         auth = FirebaseAuth.getInstance()
         binding = ActivityHomepageBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Set greeting based on time
+        // Greeting
         binding.tvGreeting.text = getGreeting()
-
-        // Show user details
         binding.tvUserName.text = updateName()
 
+        // Profile click
         binding.profileSection.setOnClickListener {
             startActivity(Intent(this, ProfileActivity::class.java))
         }
 
-        // Order Now button click listener
+        // Order now
         binding.btnOrderNow.setOnClickListener {
             val intent = Intent(this, OrderActivity::class.java)
             intent.putExtra("username", updateName())
             startActivity(intent)
         }
+
+        // Notifications
         binding.notification.setOnClickListener {
             startActivity(Intent(this, NotificationActivity::class.java))
         }
-        binding.btnCheckRequests.setOnClickListener {
+
+        // Initialize MapLibre
+        initializeMap(savedInstanceState)
+
+        // Setup custom bottom navigation
+        setupCustomBottomNav()
+    }
+
+    private fun setupCustomBottomNav() {
+        // Home
+        binding.navHome.setOnClickListener {
+            // Already on home
+        }
+
+        // Browse Requests
+        binding.navBrowse.setOnClickListener {
             startActivity(Intent(this, RequestActivity::class.java))
         }
 
-        // Initialize MapView
-        initializeMap(savedInstanceState)
+        // My Logs
+        binding.navActivity.setOnClickListener {
+            startActivity(Intent(this, MyLogsActivity::class.java))
+        }
+
+        // Profile
+        binding.navProfile.setOnClickListener {
+            startActivity(Intent(this, ProfileActivity::class.java))
+        }
     }
 
     private fun initializeMap(savedInstanceState: Bundle?) {
@@ -65,24 +85,16 @@ class Homepage : AppCompatActivity() {
 
         mapView?.getMapAsync { mapLibreMap ->
             map = mapLibreMap
-
-            // Disable logo (optional - removes MapLibre logo)
             mapLibreMap.uiSettings.isLogoEnabled = false
-
-            // Move attribution to a less obtrusive position
             mapLibreMap.uiSettings.isAttributionEnabled = true
-            mapLibreMap.uiSettings.attributionGravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
+            mapLibreMap.uiSettings.attributionGravity =
+                android.view.Gravity.BOTTOM or android.view.Gravity.END
             mapLibreMap.uiSettings.setAttributionMargins(0, 0, 8, 8)
-
-            // Disable rotation gestures (optional - makes map easier to use)
             mapLibreMap.uiSettings.isRotateGesturesEnabled = false
 
-            // Use OpenStreetMap style (free and open source)
             mapLibreMap.setStyle(
-                Style.Builder()
-                    .fromUri("https://demotiles.maplibre.org/style.json")
+                Style.Builder().fromUri("https://demotiles.maplibre.org/style.json")
             ) {
-                // Map is ready, set initial position (example: Delhi, India)
                 val delhi = LatLng(28.6139, 77.2090)
                 mapLibreMap.cameraPosition = CameraPosition.Builder()
                     .target(delhi)

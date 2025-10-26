@@ -18,6 +18,9 @@
         android:theme="@style/Theme.SmallBasket"
         tools:targetApi="31">
         <activity
+            android:name=".MyLogsActivity"
+            android:exported="false" />
+        <activity
             android:name=".DeliveryConfimationActivity"
             android:exported="false" />
         <activity
