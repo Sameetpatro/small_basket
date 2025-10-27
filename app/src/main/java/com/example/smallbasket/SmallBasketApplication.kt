@@ -1,19 +1,21 @@
-// File: app/src/main/java/com/example/smallbasket/SmallBasketApplication.kt
 package com.example.smallbasket
 
 import android.app.Application
 import android.util.Log
 import com.example.smallbasket.location.LocationTrackingCoordinator
+import com.example.smallbasket.notifications.NotificationScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
-/**
- * Application class for SmallBasket
- * Initializes location tracking coordinator on app startup
- */
 class SmallBasketApplication : Application() {
 
     companion object {
         private const val TAG = "SmallBasketApp"
     }
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
@@ -21,12 +23,26 @@ class SmallBasketApplication : Application() {
         Log.d(TAG, "SmallBasket Application created")
 
         // Initialize location tracking coordinator
-        // This sets up the lifecycle observer and prepares the system
         try {
             LocationTrackingCoordinator.getInstance(this).initialize()
             Log.d(TAG, "Location tracking coordinator initialized")
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing location tracking coordinator", e)
+        }
+
+        // Initialize notifications
+        applicationScope.launch {
+            try {
+                val notificationManager = com.example.smallbasket.notifications.NotificationManager.getInstance(this@SmallBasketApplication)
+                notificationManager.initialize()
+                Log.d(TAG, "Notifications initialized")
+
+                // Schedule promotional notifications
+                NotificationScheduler.schedulePromotionalNotifications(this@SmallBasketApplication)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error initializing notifications", e)
+            }
         }
     }
 

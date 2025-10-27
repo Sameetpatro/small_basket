@@ -17,6 +17,20 @@
     <string name="get_started">Get Started</string>
     <string name="logo">Logo</string>
 
+    <!-- Notification Channels -->
+    <string name="default_notification_channel_id">smallbasket_default</string>
+    <string name="order_updates_channel_id">order_updates</string>
+    <string name="order_updates_channel_name">Order Updates</string>
+    <string name="order_updates_channel_description">Get notified about your order status</string>
+
+    <string name="delivery_updates_channel_id">delivery_updates</string>
+    <string name="delivery_updates_channel_name">Delivery Updates</string>
+    <string name="delivery_updates_channel_description">Updates about deliveries you\'re handling</string>
+
+    <string name="promotional_channel_id">promotional</string>
+    <string name="promotional_channel_name">Promotional</string>
+    <string name="promotional_channel_description">Special offers and reminders</string>
+
     <!-- Updated to match backend areas.py PREDEFINED_AREAS -->
     <string-array name="location_areas">
         <item>Select Location Area</item>

@@ -1,8 +1,11 @@
 // File: app/src/main/java/com/example/smallbasket/Homepage.kt
 package com.example.smallbasket
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,7 +24,6 @@ import com.example.smallbasket.databinding.ActivityHomepageBinding
 import com.example.smallbasket.location.*
 import com.example.smallbasket.models.MapUserData
 import com.example.smallbasket.repository.MapRepository
-import com.example.smallbasket.utils.HeatmapStats
 import com.example.smallbasket.utils.MapUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -36,6 +38,7 @@ import org.maplibre.android.annotations.Marker
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.delay
+
 
 class Homepage : AppCompatActivity() {
 
@@ -87,6 +90,7 @@ class Homepage : AppCompatActivity() {
         setupCustomBottomNav()
         setupMapClickListener()
         setupRefreshButton()
+        requestNotificationPermission()
     }
 
     private fun setupUI() {
@@ -576,6 +580,29 @@ class Homepage : AppCompatActivity() {
         binding.tvOnlineUsers.text = demoUsers.size.toString()
 
         Toast.makeText(this, "Loaded ${demoUsers.size} demo users", Toast.LENGTH_SHORT).show()
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            Log.d(TAG, "Notification permission granted")
+        } else {
+            Log.w(TAG, "Notification permission denied")
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 }
 
