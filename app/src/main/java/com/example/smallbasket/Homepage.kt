@@ -1,7 +1,12 @@
 package com.example.smallbasket
 
 import android.content.Intent
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.view.WindowInsetsController
+import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import com.example.smallbasket.databinding.ActivityHomepageBinding
@@ -23,6 +28,10 @@ class Homepage : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MapLibre.getInstance(this)
+
+        // Setup transparent status bar BEFORE enableEdgeToEdge
+        setupStatusBar()
+
         enableEdgeToEdge()
 
         auth = FirebaseAuth.getInstance()
@@ -55,6 +64,39 @@ class Homepage : AppCompatActivity() {
 
         // Setup custom bottom navigation
         setupCustomBottomNav()
+
+        // Setup scroll listener to change status bar color
+        setupScrollListener()
+    }
+
+    private fun setupStatusBar() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.apply {
+                // Make status bar transparent
+                statusBarColor = Color.TRANSPARENT
+
+                // Allow content to draw behind status bar
+                @Suppress("DEPRECATION")
+                decorView.systemUiVisibility = (
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        )
+            }
+        }
+
+        // Set white icons for teal background
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // For Android 11+ - Remove light status bar to get white icons
+            window.insetsController?.setSystemBarsAppearance(
+                0,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            // For Android 6.0-10 - Ensure light status bar flag is NOT set (for white icons)
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        }
     }
 
     private fun setupCustomBottomNav() {
@@ -76,6 +118,38 @@ class Homepage : AppCompatActivity() {
         // Profile
         binding.navProfile.setOnClickListener {
             startActivity(Intent(this, ProfileActivity::class.java))
+        }
+    }
+
+    private fun setupScrollListener() {
+        binding.scrollView.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
+            // Change status bar appearance based on scroll position
+            // When scrolled past the header (e.g., 200px), change to light icons
+            if (scrollY > 200) {
+                // Scrolled down - use dark icons for light background
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    window.insetsController?.setSystemBarsAppearance(
+                        APPEARANCE_LIGHT_STATUS_BARS,
+                        APPEARANCE_LIGHT_STATUS_BARS
+                    )
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    @Suppress("DEPRECATION")
+                    window.decorView.systemUiVisibility =
+                        window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+                }
+            } else {
+                // At top - use white icons for teal background
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    window.insetsController?.setSystemBarsAppearance(
+                        0,
+                        APPEARANCE_LIGHT_STATUS_BARS
+                    )
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    @Suppress("DEPRECATION")
+                    window.decorView.systemUiVisibility =
+                        window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+                }
+            }
         }
     }
 
