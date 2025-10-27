@@ -1,59 +1,184 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardDelivery"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="6dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="1dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvItemTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Groceries for Hostel"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#000000" />
-
+        <!-- Title and Priority Badge Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_marginTop="4dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
 
+            <!-- Title -->
             <TextView
-                android:id="@+id/tvPickup"
+                android:id="@+id/tvDeliveryTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Lunch from Canteen"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#111827"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginEnd="8dp"
+                tools:text="Lunch from Canteen" />
+
+            <!-- Priority Badge (only visible when priority = true) -->
+            <TextView
+                android:id="@+id/tvPriorityBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pickup: Market"
-                android:textSize="14sp"
-                android:textColor="#555" />
-
-            <TextView
-                android:id="@+id/tvDrop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Drop: Hostel"
-                android:textSize="14sp"
-                android:textColor="#555" />
+                android:background="@drawable/bg_priority_badge"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="12dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="4dp"
+                android:text="Priority"
+                android:textColor="#D97706"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnViewDetails"
-            android:layout_width="wrap_content"
+        <!-- Pickup Location with Icon -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="View Details"
-            android:textAllCaps="false"
-            android:layout_gravity="end"
-            android:layout_marginTop="6dp"
-            android:backgroundTint="#FF9800"
-            android:textColor="#FFF" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:id="@+id/ivPickupIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:contentDescription="Pickup location"
+                android:src="@drawable/ic_map_pin_amber"
+                app:tint="#F59E0B" />
+
+            <TextView
+                android:id="@+id/tvPickupLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Canteen"
+                android:textSize="14sp"
+                android:textColor="#6B7280"
+                android:fontFamily="sans-serif"
+                android:layout_marginStart="8dp"
+                tools:text="Canteen" />
+        </LinearLayout>
+
+        <!-- Dropoff Location with Icon -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/ivDropoffIcon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_map_pin_teal"
+                android:contentDescription="Drop-off location"
+                app:tint="#14B8A6" />
+
+            <TextView
+                android:id="@+id/tvDropoffLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hostel A"
+                android:textSize="14sp"
+                android:textColor="#6B7280"
+                android:fontFamily="sans-serif"
+                android:layout_marginStart="8dp"
+                tools:text="Hostel A" />
+        </LinearLayout>
+
+        <!-- Bottom Row: Fee, Time, Accept Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Fee and Time -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvDeliveryFee"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹25"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#14B8A6"
+                    android:fontFamily="sans-serif-medium"
+                    tools:text="₹25" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" • "
+                    android:textSize="14sp"
+                    android:textColor="#6B7280"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp" />
+
+                <TextView
+                    android:id="@+id/tvDeliveryTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15 min"
+                    android:textSize="14sp"
+                    android:textColor="#6B7280"
+                    android:fontFamily="sans-serif"
+                    tools:text="15 min" />
+            </LinearLayout>
+
+            <!-- Accept Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAcceptDelivery"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="View"
+                android:textSize="14sp"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:minWidth="80dp"
+                app:cornerRadius="16dp"
+                app:backgroundTint="#14B8A6"
+                app:elevation="2dp"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
+        </LinearLayout>
+
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>
