@@ -15,6 +15,12 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.regex.Pattern
+import androidx.appcompat.app.AppCompatDelegate
+import android.widget.Switch
+
+// Inside onCreate()
+
+
 
 class ProfileActivity : AppCompatActivity() {
     private lateinit var binding: ActivityProfileBinding
@@ -58,6 +64,7 @@ class ProfileActivity : AppCompatActivity() {
             // User not logged in, redirect to MainActivity
             redirectToLogin()
         }
+
     }
 
     private fun setupClickListeners() {
@@ -175,6 +182,13 @@ class ProfileActivity : AppCompatActivity() {
             } else null
 
             val isDasa = admissionDigit == '2'
+
+            binding.btnSignOut.setOnClickListener {
+                auth.signOut()
+                Toast.makeText(this, "Signed out successfully", Toast.LENGTH_SHORT).show()
+                redirectToLogin()
+            }
+
 
             // Show student info card
             binding.cardStudentInfo.visibility = View.VISIBLE
