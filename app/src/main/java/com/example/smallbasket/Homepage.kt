@@ -44,6 +44,9 @@ class Homepage : AppCompatActivity() {
         private const val DEFAULT_ZOOM = 15.0
         private const val MAP_RADIUS_METERS = 5000.0
         private const val BACKEND_SYNC_DELAY = 3000L
+
+        // 🔧 DEBUG MODE: Set to true to see test heatmap, false to see real users only
+        private const val ENABLE_DEBUG_HEATMAP = false  // DISABLED - you have 2 real devices!
     }
 
     private lateinit var auth: FirebaseAuth
@@ -325,6 +328,7 @@ class Homepage : AppCompatActivity() {
         Log.d(TAG, "=== Loading nearby users ===")
         Log.d(TAG, "Location: ($latitude, $longitude)")
         Log.d(TAG, "Radius: ${MAP_RADIUS_METERS}m")
+        Log.d(TAG, "Debug heatmap: $ENABLE_DEBUG_HEATMAP")
 
         lifecycleScope.launch {
             try {
@@ -340,6 +344,8 @@ class Homepage : AppCompatActivity() {
 
                     val message = if (response.total > 0) {
                         "Found ${response.total} deliverers nearby"
+                    } else if (ENABLE_DEBUG_HEATMAP) {
+                        "Debug mode: Showing test heatmap"
                     } else {
                         "No deliverers found nearby"
                     }
@@ -348,7 +354,12 @@ class Homepage : AppCompatActivity() {
 
                 result.onFailure { error ->
                     Log.e(TAG, "✗ FAILED: ${error.message}")
-                    binding.tvOnlineUsers.text = "0"
+                    if (ENABLE_DEBUG_HEATMAP) {
+                        Log.d(TAG, "🔧 Debug mode: showing test heatmap anyway")
+                        displayUsersOnMap(emptyList())
+                    } else {
+                        binding.tvOnlineUsers.text = "0"
+                    }
                     Toast.makeText(this@Homepage, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
                 }
 
@@ -364,39 +375,38 @@ class Homepage : AppCompatActivity() {
 
     private fun displayUsersOnMap(users: List<MapUserData>) {
         map?.let { mapInstance ->
-            Log.d(TAG, "🗺️ Displaying ${users.size} users on map with HEATMAP")
+            Log.d(TAG, "🗺️ Displaying ${users.size} users on map with HEATMAP + GRAY CIRCLES")
 
-            // Clear old user markers (KEEP your red pointer)
-            userMarkers.keys.forEach { marker ->
-                mapInstance.removeMarker(marker)
-            }
-            userMarkers.clear()
+            try {
+                // Use the new method that adds both heatmap and gray circles
+                MapUtils.addHeatmapWithAreas(mapInstance, users, currentUserLocation)
 
-            // Add HEATMAP overlay directly on the map
-            MapUtils.addHeatmapLayer(mapInstance, users, currentUserLocation)
+                // Get statistics
+                val stats = MapUtils.getHeatmapStats(users, currentUserLocation)
 
-            // Get statistics for logging
-            val stats = MapUtils.getHeatmapStats(users, currentUserLocation)
-
-            Log.d(TAG, "✓ Heatmap rendered on map!")
-            Log.d(TAG, "  🔥 Heatmap points: ${stats.totalUsers}")
-            Log.d(TAG, "  📍 Your red pointer: visible")
-            Log.d(TAG, "  🎨 Color zones:")
-            stats.topAreas.forEach { (area, count) ->
-                val intensity = when {
-                    count >= 30 -> "🔴 HIGH"
-                    count >= 20 -> "🟠 MEDIUM-HIGH"
-                    count >= 10 -> "🟡 MEDIUM"
-                    count >= 5 -> "🟢 LOW-MEDIUM"
-                    else -> "🔵 LOW"
+                Log.d(TAG, "✓ Map rendering complete!")
+                Log.d(TAG, "  🔥 Total users in heatmap: ${stats.totalUsers}")
+                Log.d(TAG, "  📍 Your red pointer: visible")
+                Log.d(TAG, "  🎨 Top areas:")
+                stats.topAreas.forEach { (area, count) ->
+                    val intensity = when {
+                        count >= 30 -> "🔴 HIGH"
+                        count >= 20 -> "🟠 MEDIUM-HIGH"
+                        count >= 10 -> "🟡 MEDIUM"
+                        count >= 5 -> "🟢 LOW-MEDIUM"
+                        else -> "🔵 LOW"
+                    }
+                    Log.d(TAG, "    $intensity - $area: $count users")
                 }
-                Log.d(TAG, "    $intensity - $area: $count users")
+
+                // Update user count
+                binding.tvOnlineUsers.text = users.size.toString()
+
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error rendering map", e)
+                Toast.makeText(this, "Map error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
 
-            // Update user count
-            binding.tvOnlineUsers.text = users.size.toString()
-
-            Log.d(TAG, "✓ Map rendering complete: Heatmap + Red Pointer")
         } ?: run {
             Log.w(TAG, "Map not initialized")
         }
@@ -412,6 +422,15 @@ class Homepage : AppCompatActivity() {
         }
         binding.navProfile.setOnClickListener {
             startActivity(Intent(this, ProfileActivity::class.java))
+        }
+    }
+    private fun setupDemoButton() {
+        // You can add this as a FloatingActionButton in your layout
+        // or call it directly for testing
+        binding.btnRefreshUsers.setOnLongClickListener {
+            Log.d(TAG, "Long press detected - loading demo users")
+            loadDemoUsers()
+            true
         }
     }
 
@@ -539,4 +558,24 @@ class Homepage : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         mapView?.onSaveInstanceState(outState)
     }
+    private fun loadDemoUsers() {
+        Log.d(TAG, "=== LOADING DEMO USERS FOR TESTING ===")
+
+        // Generate demo users
+        val demoUsers = MapUtils.getDemoUsers()
+
+        Log.d(TAG, "Generated ${demoUsers.size} demo users")
+        demoUsers.forEach { user ->
+            Log.d(TAG, "  - ${user.name} at ${user.currentArea}: (${user.latitude}, ${user.longitude})")
+        }
+
+        // Display on map
+        displayUsersOnMap(demoUsers)
+
+        // Update count
+        binding.tvOnlineUsers.text = demoUsers.size.toString()
+
+        Toast.makeText(this, "Loaded ${demoUsers.size} demo users", Toast.LENGTH_SHORT).show()
+    }
 }
+

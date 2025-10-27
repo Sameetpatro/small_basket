@@ -15,12 +15,12 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=ANAVVB3901008241" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=RZCX92KSKPM" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=RZCX92KSKPM" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=ANAVVB3901008241" />
               </handle>
             </Target>
           </targets>
