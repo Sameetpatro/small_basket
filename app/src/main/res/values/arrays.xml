@@ -1,0 +1,17 @@
+<resources>
+    <string-array name="pickup_areas">
+        <item>SBIT</item>
+        <item>Pallri</item>
+        <item>Bahalgarh</item>
+        <item>Sonepat</item>
+        <item>TDI</item>
+    </string-array>
+
+    <string-array name="drop_areas">
+        <item>SBIT</item>
+        <item>Pallri</item>
+        <item>Bahalgarh</item>
+        <item>Sonepat</item>
+        <item>TDI</item>
+    </string-array>
+</resources>

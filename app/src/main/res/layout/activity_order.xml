@@ -6,73 +6,92 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
+    android:background="#F9FAFB"
+    android:fitsSystemWindows="false"
     tools:context=".OrderActivity">
 
-    <!-- Header Section -->
+    <!-- Header Section with Gradient Background -->
     <LinearLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingTop="24dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:gravity="center_vertical"
+        android:orientation="vertical"
+        android:background="@drawable/bg_teal_gradient"
+        android:paddingTop="48dp"
+        android:paddingBottom="24dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- App Icon -->
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_shopping_cart"
-            android:contentDescription="Small Basket App Logo"
-            android:layout_marginEnd="8dp" />
-
-        <!-- Title -->
-        <TextView
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:text="Place Delivery Order"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#333333" />
-
-        <!-- Order Priority (Top Right) -->
+        <!-- Back Button and Title Row -->
         <LinearLayout
-            android:id="@+id/priorityContainer"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Normal"
-                android:textColor="#757575"
-                android:layout_marginEnd="6dp"
-                android:textSize="14sp" />
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:contentDescription="Back"
+                android:focusable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="#FFFFFF" />
 
-            <Switch
-                android:id="@+id/swPriority"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:thumbTint="#FFFFFF"
-                android:trackTint="#FFC107"
-                android:minHeight="40dp" />
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Emergency"
-                android:textStyle="bold"
-                android:textColor="#FF9800"
-                android:layout_marginStart="6dp"
-                android:textSize="14sp" />
+                <!-- Title + Priority Toggle Row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/tvRequestsTitle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Request Details"
+                        android:textColor="#FFFFFF"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <!-- Priority Toggle -->
+                    <Switch
+                        android:id="@+id/priority"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Priority"
+                        android:textColor="#FFFFFF"
+                        android:trackTint="@color/white"
+                        android:thumbTint="@color/white"/>
+                </LinearLayout>
+
+                <!-- Subtitle -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.9"
+                    android:text="What do you need delivered?"
+                    android:textColor="#E6FFFFFF"
+                    android:textSize="12sp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
@@ -81,113 +100,375 @@
         android:id="@+id/scrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/headerLayout"
         app:layout_constraintBottom_toTopOf="@id/btnPlaceNow"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:padding="16dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Dynamic Item Container -->
-            <TextView style="@style/InputLabel" android:text="Items" />
-            <LinearLayout
-                android:id="@+id/llItemContainer"
+            <!-- Main Card Container -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                style="@style/InputBox"
-                />
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                android:layout_marginBottom="8dp">
 
-            <Button
-                android:id="@+id/btnAddItem"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Add Item"
-                android:textColor="@android:color/white"
-                android:backgroundTint="#FF9800"
-                android:layout_marginTop="8dp"
-                android:minHeight="30dp"/>
-
-            <!-- Specific Pickup Location -->
-            <TextView style="@style/InputLabel" android:text="Specific Pickup Location" />
-            <EditText
-                android:id="@+id/etSpecificPickupLocation"
-                style="@style/InputBox"
-                android:hint="Enter building name, room number, or detailed address" />
-
-            <!-- Pickup Area -->
-            <TextView style="@style/InputLabel" android:text="Pickup Area" />
-            <LinearLayout style="@style/InputBoxContainer">
-                <Spinner
-                    android:id="@+id/spPickupLocation"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:entries="@array/location_areas"
-                    android:spinnerMode="dropdown" />
-            </LinearLayout>
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <!-- Drop Location -->
-            <TextView style="@style/InputLabel" android:text="Specific Drop Location" />
-            <EditText
-                android:id="@+id/spDropLocation"
-                style="@style/InputBox"
-                android:hint="Enter building name, room number, or detailed address" />
+                    <!-- Item Name -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Item name *"
+                        android:textSize="14sp"
+                        android:textColor="#6B7280"
+                        android:layout_marginBottom="8dp" />
 
-            <!-- Drop Area -->
-            <TextView style="@style/InputLabel" android:text="Drop Area" />
-            <LinearLayout style="@style/InputBoxContainer">
-                <Spinner
-                    android:id="@+id/spDropArea"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:entries="@array/location_areas"
-                    android:spinnerMode="dropdown" />
-            </LinearLayout>
+                    <EditText
+                        android:id="@+id/item"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="e.g., Lunch, Notebook, Charger"
+                        android:textColorHint="#9CA3AF"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:background="@drawable/bg_input_rounded"
+                        android:padding="12dp"
+                        android:minHeight="48dp"
+                        android:layout_marginBottom="16dp" />
 
-            <!-- Reward -->
-            <TextView style="@style/InputLabel" android:text="Reward" />
-            <LinearLayout style="@style/InputBoxContainer">
-                <TextView
-                    android:id="@+id/tvReward"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="10%"
-                    android:textSize="18sp"
-                    android:textColor="#FF9800"
-                    android:textStyle="bold"
-                    android:padding="12dp" />
-            </LinearLayout>
+                    <!-- Pickup Location Label -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Pickup location *"
+                        android:textSize="14sp"
+                        android:textColor="#6B7280"
+                        android:layout_marginBottom="8dp" />
 
-            <!-- Best Before -->
-            <TextView style="@style/InputLabel" android:text="Best Before" />
-            <EditText
-                android:id="@+id/etBestBeforeTime"
-                style="@style/InputBox"
-                android:hint="Select time"
-                android:focusable="false"
-                android:clickable="true" />
+                    <!-- Pickup Location Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
 
-            <!-- Deadline -->
-            <TextView style="@style/InputLabel" android:text="Deadline" />
-            <EditText
-                android:id="@+id/etDeadlineTime"
-                style="@style/InputBox"
-                android:hint="Select time"
-                android:focusable="false"
-                android:clickable="true" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:background="@drawable/bg_input_rounded"
+                            android:gravity="center_vertical"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp"
+                            android:minHeight="48dp">
 
-            <!-- Notes -->
-            <TextView style="@style/InputLabel" android:text="Additional Notes" />
-            <EditText
-                android:id="@+id/etNote"
-                style="@style/InputBox"
-                android:minLines="4"
-                android:gravity="top|start"
-                android:hint="Provide any specific instructions or details here..." />
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_map_pin"
+                                android:layout_marginEnd="8dp"
+                                android:contentDescription="Pickup location icon"
+                                app:tint="#6B7280" />
+
+                            <EditText
+                                android:id="@+id/pickup"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Location name"
+                                android:textColorHint="#9CA3AF"
+                                android:textColor="#111827"
+                                android:textSize="16sp"
+                                android:background="@android:color/transparent"
+                                android:padding="0dp" />
+                        </LinearLayout>
+
+                        <Spinner
+                            android:id="@+id/pickupArea"
+                            android:layout_width="128dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_input_rounded"
+                            android:entries="@array/pickup_areas"
+                            android:spinnerMode="dropdown"
+                            android:layout_marginStart="8dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/pickup_error"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="#EF4444"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone" />
+
+                    <!-- Drop Location Label -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Drop location *"
+                        android:textSize="14sp"
+                        android:textColor="#6B7280"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- Drop Location Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:background="@drawable/bg_input_rounded"
+                            android:gravity="center_vertical"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp"
+                            android:minHeight="48dp">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_map_pin"
+                                android:layout_marginEnd="8dp"
+                                android:contentDescription="Drop location icon"
+                                app:tint="#14B8A6" />
+
+                            <EditText
+                                android:id="@+id/drop"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="Your location"
+                                android:textColorHint="#9CA3AF"
+                                android:textColor="#111827"
+                                android:textSize="16sp"
+                                android:background="@android:color/transparent"
+                                android:padding="0dp" />
+                        </LinearLayout>
+
+                        <Spinner
+                            android:id="@+id/dropArea"
+                            android:layout_width="128dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_input_rounded"
+                            android:entries="@array/drop_areas"
+                            android:spinnerMode="dropdown"
+                            android:layout_marginStart="8dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/drop_error"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="#EF4444"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone" />
+
+                    <!-- Fare Input Row -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Delivery fee"
+                        android:textSize="14sp"
+                        android:textColor="#6B7280"
+                        android:layout_marginBottom="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/bg_input_rounded"
+                        android:gravity="center_vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:layout_marginBottom="8dp">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_rupee"
+                            android:layout_marginEnd="4dp"
+                            android:contentDescription="Currency icon"
+                            app:tint="#6B7280" />
+
+                        <EditText
+                            android:id="@+id/fare"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="₹0"
+                            android:textColorHint="#9CA3AF"
+                            android:textColor="#111827"
+                            android:textSize="14sp"
+                            android:inputType="numberDecimal"
+                            android:background="@android:color/transparent"
+                            android:padding="0dp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/fare_error"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="#EF4444"
+                        android:layout_marginTop="0dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone" />
+
+                    <!-- Deadline Label -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Request expires in"
+                        android:textSize="14sp"
+                        android:textColor="#6B7280"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- Deadline Buttons Row 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+
+                        <Button
+                            android:id="@+id/deadline_30m"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="44dp"
+                            android:text="30m"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#111827"
+                            android:background="@drawable/bg_button_teal_solid"
+                            android:stateListAnimator="@null"
+                            android:layout_marginEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/deadline_1h"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="44dp"
+                            android:text="1h"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#111827"
+                            android:stateListAnimator="@null"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_button_teal_solid"/>
+
+                        <Button
+                            android:id="@+id/deadline_2h"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="44dp"
+                            android:text="2h"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#111827"
+                            android:background="@drawable/bg_button_teal_solid"
+                            android:stateListAnimator="@null"
+                            android:layout_marginEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/deadline_4h"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="44dp"
+                            android:text="4h"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:textColor="#111827"
+                            android:background="@drawable/bg_button_teal_solid"
+                            android:stateListAnimator="@null" />
+                    </LinearLayout>
+
+                    <!-- Custom Time Button (Full Width) -->
+                    <Button
+                        android:id="@+id/deadline_custom"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:text="⏰  Select Custom Time"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="#111827"
+                        android:background="@drawable/bg_button_teal_solid"
+                        android:stateListAnimator="@null"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- Custom Time Display -->
+                    <TextView
+                        android:id="@+id/tvCustomTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="#14B8A6"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone"
+                        android:gravity="center"
+                        android:textStyle="bold"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp" />
+
+                    <!-- Notes Label -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Additional notes (optional)"
+                        android:textSize="14sp"
+                        android:textColor="#6B7280"
+                        android:layout_marginBottom="8dp" />
+
+                    <!-- Notes Input -->
+                    <EditText
+                        android:id="@+id/notes"
+                        android:layout_width="match_parent"
+                        android:layout_height="80dp"
+                        android:hint="Any special instructions..."
+                        android:textColorHint="#9CA3AF"
+                        android:textColor="#111827"
+                        android:textSize="14sp"
+                        android:background="@drawable/bg_input_rounded"
+                        android:padding="12dp"
+                        android:gravity="top|start"
+                        android:inputType="textMultiLine"
+                        android:scrollbars="vertical" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
         </LinearLayout>
     </ScrollView>
 
@@ -195,17 +476,18 @@
     <Button
         android:id="@+id/btnPlaceNow"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="PLACE NOW"
-        android:textSize="18sp"
+        android:layout_height="56dp"
+        android:text="POST REQUEST"
+        android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="@android:color/white"
-        android:backgroundTint="#FF9800"
+        android:textColor="#FFFFFF"
+        android:background="@drawable/bg_button_teal_gradient"
+        android:hapticFeedbackEnabled="true"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="24dp"
-        android:minHeight="60dp"
-        app:cornerRadius="12dp"
+        android:layout_marginBottom="16dp"
+        android:elevation="0dp"
+        android:stateListAnimator="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
