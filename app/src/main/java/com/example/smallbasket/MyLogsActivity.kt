@@ -1,12 +1,12 @@
 package com.example.smallbasket
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.smallbasket.databinding.ActivityMyLogsBinding
 import com.example.smallbasket.models.Order
 import com.example.smallbasket.repository.OrderRepository
@@ -35,8 +35,13 @@ class MyLogsActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerViews() {
-        myOrdersAdapter = MyLogsAdapter(emptyList())
-        myDeliveriesAdapter = MyLogsAdapter(emptyList())
+        myOrdersAdapter = MyLogsAdapter(emptyList()) { order ->
+            navigateToRequestDetail(order)
+        }
+
+        myDeliveriesAdapter = MyLogsAdapter(emptyList()) { order ->
+            navigateToDeliveryDetail(order)
+        }
 
         binding.rvMyOrders.apply {
             layoutManager = LinearLayoutManager(this@MyLogsActivity)
@@ -71,21 +76,86 @@ class MyLogsActivity : AppCompatActivity() {
         })
     }
 
+    private fun extractLocation(location: String?, area: String?): String {
+        return when {
+            location.isNullOrBlank() && area.isNullOrBlank() -> "Unknown"
+            location.isNullOrBlank() -> area!!
+            area.isNullOrBlank() -> location
+            else -> location
+        }
+    }
+
+    private fun extractRewardPercentage(order: Order): Int {
+        return try {
+            order.reward?.toInt() ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    private fun isPriorityOrder(priority: String?): Boolean {
+        return priority?.equals("emergency", ignoreCase = true) == true ||
+                priority?.equals("high", ignoreCase = true) == true ||
+                priority?.equals("urgent", ignoreCase = true) == true
+    }
+
+    private fun navigateToRequestDetail(order: Order) {
+        val intent = Intent(this, RequestDetailActivity::class.java).apply {
+            putExtra("order_id", order.id)
+            putExtra("title", order.items.joinToString(", "))
+            putExtra("pickup", extractLocation(order.pickupLocation, order.pickupArea))
+            putExtra("pickup_area", order.pickupArea)
+            putExtra("drop", extractLocation(order.dropLocation, order.dropArea))
+            putExtra("drop_area", order.dropArea)
+            putExtra("details", order.notes ?: "")
+            putExtra("priority", if (isPriorityOrder(order.priority)) "emergency" else "normal")
+            putExtra("best_before", order.bestBefore)
+            putExtra("deadline", order.deadline)
+            putExtra("reward_percentage", extractRewardPercentage(order).toDouble())
+            putExtra("isImportant", isPriorityOrder(order.priority))
+            // Only include item_price if it exists
+            order.itemPrice?.let { putExtra("item_price", it) }
+            putExtra("status", order.status)
+            // ✅ PASS ACCEPTOR INFO
+            putExtra("acceptor_email", order.acceptorEmail)
+            putExtra("acceptor_name", order.acceptorName)  // ✅ NEW
+            putExtra("acceptor_phone", order.acceptorPhone)  // ✅ NEW
+        }
+        startActivity(intent)
+    }
+
+    private fun navigateToDeliveryDetail(order: Order) {
+        // If it's an accepted/completed delivery, navigate to delivery confirmation
+        if (order.status == "accepted" || order.status == "completed") {
+            val intent = Intent(this, DeliveryConfimationActivity::class.java).apply {
+                putExtra("order_id", order.id)
+                putExtra("title", order.items.joinToString(", "))
+            }
+            startActivity(intent)
+        } else {
+            // Otherwise show request detail
+            navigateToRequestDetail(order)
+        }
+    }
+
     private fun loadMyOrders() {
         binding.progressBar.visibility = View.VISIBLE
+        binding.tvEmptyMessage.visibility = View.GONE
 
         lifecycleScope.launch {
             val result = repository.getUserOrders()
 
             result.onSuccess { orders ->
                 binding.progressBar.visibility = View.GONE
-                myOrdersAdapter.updateData(orders)
 
                 if (orders.isEmpty()) {
                     binding.tvEmptyMessage.visibility = View.VISIBLE
                     binding.tvEmptyMessage.text = "No orders placed yet"
+                    binding.rvMyOrders.visibility = View.GONE
                 } else {
                     binding.tvEmptyMessage.visibility = View.GONE
+                    binding.rvMyOrders.visibility = View.VISIBLE
+                    myOrdersAdapter.updateData(orders)
                 }
             }
 
@@ -93,6 +163,8 @@ class MyLogsActivity : AppCompatActivity() {
                 binding.progressBar.visibility = View.GONE
                 binding.tvEmptyMessage.visibility = View.VISIBLE
                 binding.tvEmptyMessage.text = "Error loading orders"
+                binding.rvMyOrders.visibility = View.GONE
+
                 Toast.makeText(
                     this@MyLogsActivity,
                     "Error: ${error.message}",
@@ -104,19 +176,22 @@ class MyLogsActivity : AppCompatActivity() {
 
     private fun loadMyDeliveries() {
         binding.progressBar.visibility = View.VISIBLE
+        binding.tvEmptyMessage.visibility = View.GONE
 
         lifecycleScope.launch {
             val result = repository.getAcceptedOrders()
 
             result.onSuccess { orders ->
                 binding.progressBar.visibility = View.GONE
-                myDeliveriesAdapter.updateData(orders)
 
                 if (orders.isEmpty()) {
                     binding.tvEmptyMessage.visibility = View.VISIBLE
                     binding.tvEmptyMessage.text = "No deliveries accepted yet"
+                    binding.rvMyDeliveries.visibility = View.GONE
                 } else {
                     binding.tvEmptyMessage.visibility = View.GONE
+                    binding.rvMyDeliveries.visibility = View.VISIBLE
+                    myDeliveriesAdapter.updateData(orders)
                 }
             }
 
@@ -124,6 +199,8 @@ class MyLogsActivity : AppCompatActivity() {
                 binding.progressBar.visibility = View.GONE
                 binding.tvEmptyMessage.visibility = View.VISIBLE
                 binding.tvEmptyMessage.text = "Error loading deliveries"
+                binding.rvMyDeliveries.visibility = View.GONE
+
                 Toast.makeText(
                     this@MyLogsActivity,
                     "Error: ${error.message}",

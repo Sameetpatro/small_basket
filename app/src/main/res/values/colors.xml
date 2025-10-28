@@ -44,6 +44,7 @@
     <color name="gray_800">#1F2937</color>
     <color name="gray_900">#111827</color>
 
+
     <!-- Border Colors -->
     <color name="border_color">#E5E7EB</color>
     <color name="border_color_dark">#374151</color>

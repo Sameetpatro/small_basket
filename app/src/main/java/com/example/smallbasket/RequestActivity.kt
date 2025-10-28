@@ -1,7 +1,12 @@
 package com.example.smallbasket
 
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -14,7 +19,10 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.smallbasket.repository.OrderRepository
 import com.example.smallbasket.models.Order
+import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.launch
+import java.io.IOException
+import java.net.UnknownHostException
 
 class RequestActivity : AppCompatActivity() {
 
@@ -26,6 +34,7 @@ class RequestActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageView
 
     private val repository = OrderRepository()
+    private lateinit var vibrator: Vibrator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +48,15 @@ class RequestActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_request)
+
+        // Initialize vibrator for haptic feedback
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
 
         initializeViews()
         setupListeners()
@@ -63,13 +81,15 @@ class RequestActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        // Back button click listener
+        // Back button click listener with Medium Haptic (secondary navigation)
         btnBack.setOnClickListener {
+            performMediumHaptic()
             onBackPressed()
         }
 
-        // Pull-to-refresh listener
+        // Pull-to-refresh listener with Light Haptic
         swipeRefreshLayout.setOnRefreshListener {
+            performLightHaptic()
             loadAvailableOrders(showSkeleton = false)
         }
     }
@@ -100,7 +120,7 @@ class RequestActivity : AppCompatActivity() {
                     recyclerView.visibility = View.GONE
                     Toast.makeText(
                         this@RequestActivity,
-                        "No pending requests available",
+                        getString(R.string.empty_no_requests),
                         Toast.LENGTH_SHORT
                     ).show()
                 } else {
@@ -115,15 +135,41 @@ class RequestActivity : AppCompatActivity() {
                 skeletonLayout.visibility = View.GONE
                 progressBar.visibility = View.GONE
                 swipeRefreshLayout.isRefreshing = false
-
                 emptyStateLayout.visibility = View.VISIBLE
                 recyclerView.visibility = View.GONE
 
-                Toast.makeText(
-                    this@RequestActivity,
-                    "Error loading requests: ${error.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+                val messageId = when {
+                    // Network-related errors
+                    error is UnknownHostException || error is IOException -> {
+                        R.string.error_no_internet
+                    }
+
+                    // Firebase-specific errors
+                    error is FirebaseFirestoreException -> {
+                        when (error.code) {
+                            FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                                R.string.error_permission_denied
+                            FirebaseFirestoreException.Code.DEADLINE_EXCEEDED ->
+                                R.string.error_timeout
+                            FirebaseFirestoreException.Code.UNAVAILABLE ->
+                                R.string.error_service_unavailable
+                            else ->
+                                R.string.error_service_unavailable
+                        }
+                    }
+
+                    // Session or auth-related issues (heuristic-based)
+                    error.message?.contains("auth", ignoreCase = true) == true ||
+                            error.message?.contains("session", ignoreCase = true) == true ||
+                            error.message?.contains("expired", ignoreCase = true) == true -> {
+                        R.string.error_session_expired
+                    }
+
+                    // Fallback for any other unexpected error
+                    else -> R.string.error_generic
+                }
+
+                Toast.makeText(this@RequestActivity, getString(messageId), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -146,7 +192,8 @@ class RequestActivity : AppCompatActivity() {
         }
 
         recyclerView.adapter = DeliveryCardAdapter(requests) { request ->
-            navigateToDetail(request)
+            performMediumHaptic()
+            navigateToDetail(request, orders)
         }
     }
 
@@ -161,7 +208,7 @@ class RequestActivity : AppCompatActivity() {
 
     private fun extractRewardPercentage(order: Order): Int {
         return try {
-            order.rewardPercentage?.toInt() ?: 0
+            order.reward?.toInt() ?: 0
         } catch (e: Exception) {
             0
         }
@@ -194,7 +241,10 @@ class RequestActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateToDetail(request: DeliveryRequest) {
+    private fun navigateToDetail(request: DeliveryRequest, orders: List<Order>) {
+        // Find the corresponding order to get acceptor info
+        val order = orders.find { it.id == request.orderId }
+
         val intent = Intent(this, RequestDetailActivity::class.java).apply {
             putExtra("order_id", request.orderId)
             putExtra("title", request.title)
@@ -204,10 +254,22 @@ class RequestActivity : AppCompatActivity() {
             putExtra("priority", if (request.priority) "emergency" else "normal")
             putExtra("best_before", request.bestBefore)
             putExtra("deadline", request.deadline)
-            putExtra("reward_percentage", request.rewardPercentage)
+            putExtra("reward_percentage", request.rewardPercentage?.toDouble() ?: 0.0)
             putExtra("isImportant", request.priority)
             putExtra("fee", request.fee)
             putExtra("time", request.time)
+
+            // ✅ ADD ALL ORDER DATA
+            order?.let {
+                putExtra("pickup_area", it.pickupArea)
+                putExtra("drop_area", it.dropArea)
+                putExtra("item_price", it.itemPrice)
+                putExtra("status", it.status)
+                // ✅ ADD ACCEPTOR INFO
+                putExtra("acceptor_email", it.acceptorEmail)
+                putExtra("acceptor_name", it.acceptorName)  // ✅ NEW
+                putExtra("acceptor_phone", it.acceptorPhone)  // ✅ NEW
+            }
         }
         startActivity(intent)
     }
@@ -217,4 +279,38 @@ class RequestActivity : AppCompatActivity() {
         // Refresh orders when returning to this activity
         loadAvailableOrders(showSkeleton = false)
     }
+
+    // ==================== HAPTIC FEEDBACK METHODS ====================
+
+    /**
+     * Light Haptic: 10ms duration, 40% amplitude (~102 on 0–255 scale)
+     * Used for: Pull-to-refresh
+     */
+    private fun performLightHaptic() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val effect = VibrationEffect.createOneShot(10, 102)
+            vibrator.vibrate(effect)
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(10)
+        }
+    }
+
+    /**
+     * Medium Haptic: 15ms duration, 80% amplitude (~204 on 0–255 scale)
+     * Used for: Button taps, card taps, back navigation
+     */
+    private fun performMediumHaptic() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val effect = VibrationEffect.createOneShot(15, 204)
+            vibrator.vibrate(effect)
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(15)
+        }
+    }
+
+    // Public wrappers (in case needed externally)
+    fun triggerLightHaptic() = performLightHaptic()
+    fun triggerMediumHaptic() = performMediumHaptic()
 }

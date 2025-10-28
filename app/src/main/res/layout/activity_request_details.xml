@@ -132,8 +132,8 @@
 
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:layout_gravity="center_vertical">
 
@@ -335,6 +335,51 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- Item Price (conditionally shown) -->
+                <LinearLayout
+                    android:id="@+id/layoutItemPrice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="start"
+                    android:layout_marginBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_marginTop="2dp"
+                        android:src="@drawable/ic_rupee"
+                        app:tint="#6B7280"
+                        android:contentDescription="Item price icon" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Item price"
+                            android:textColor="#6B7280"
+                            android:textSize="12sp"
+                            android:fontFamily="sans-serif"
+                            android:layout_marginBottom="2dp" />
+
+                        <TextView
+                            android:id="@+id/tvItemPrice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₹150"
+                            android:textColor="#111827"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium" />
+                    </LinearLayout>
+                </LinearLayout>
+
                 <!-- Delivery Fee -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -371,9 +416,9 @@
                             android:id="@+id/tvReward"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="₹20"
-                            android:textColor="#14B8A6"
-                            android:textSize="18sp"
+                            android:text="₹150"
+                            android:textColor="#111827"
+                            android:textSize="15sp"
                             android:textStyle="bold"
                             android:fontFamily="sans-serif-medium" />
                     </LinearLayout>

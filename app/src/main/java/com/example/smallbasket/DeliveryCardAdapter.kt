@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.smallbasket.utils.TimeUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 
@@ -44,7 +45,9 @@ class DeliveryCardAdapter(
         holder.tvPickupLocation.text = request.pickup
         holder.tvDropoffLocation.text = request.dropoff
         holder.tvDeliveryFee.text = request.fee
-        holder.tvDeliveryTime.text = request.time
+
+        // Use TimeUtils for time remaining
+        holder.tvDeliveryTime.text = TimeUtils.getTimeRemaining(request.deadline ?: "")
 
         // Card click to view details
         holder.cardDelivery.setOnClickListener {

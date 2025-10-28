@@ -7,449 +7,354 @@
     android:background="#F9FAFB"
     android:fitsSystemWindows="false">
 
-    <!-- Main Content ScrollView -->
-    <ScrollView
-        android:id="@+id/scrollView"
+    <!-- Wrap ScrollView in SwipeRefreshLayout for pull-to-refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:fillViewport="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
+        <ScrollView
+            android:id="@+id/scrollView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
-            <!-- Header Section with Gradient Background -->
             <LinearLayout
-                android:id="@+id/headerLayout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/bg_teal_gradient"
-                android:paddingTop="48dp"
-                android:paddingBottom="24dp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
+                android:orientation="vertical">
 
-                <!-- Top Row: Greeting + Notification -->
+                <!-- Header Section with Gradient Background -->
                 <LinearLayout
+                    android:id="@+id/headerLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="20dp">
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_teal_gradient"
+                    android:paddingTop="48dp"
+                    android:paddingBottom="24dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
 
-                    <!-- Greeting Section -->
-                    <LinearLayout
-                        android:id="@+id/profile_section"
-                        android:layout_width="201dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvGreeting"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.85"
-                            android:text="Hi,"
-                            android:textColor="#FFFFFF"
-                            android:textSize="16sp" />
-
-                        <TextView
-                            android:id="@+id/tvUserName"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Username"
-                            android:textColor="#FFFFFF"
-                            android:textSize="26sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:alpha="0.9"
-                            android:text="Need anything delivered?"
-                            android:textColor="#E6FFFFFF"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <!-- Notification Icon -->
-                    <androidx.cardview.widget.CardView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        app:cardCornerRadius="24dp"
-                        app:cardElevation="0dp"
-                        app:cardBackgroundColor="#0F766E">
-
-                        <ImageView
-                            android:id="@+id/notification"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:padding="12dp"
-                            android:src="@drawable/ic_noti"
-                            android:contentDescription="Notifications"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            app:tint="#FFFFFF" />
-                    </androidx.cardview.widget.CardView>
-                </LinearLayout>
-
-                <!-- Request Delivery Button -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFA726">
-
-                    <Button
-                        android:id="@+id/btnOrderNow"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Request Delivery"
-                        android:textColor="#FFFFFF"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:padding="16dp"
-                        android:background="@android:color/transparent"
-                        android:textAllCaps="false" />
-                </androidx.cardview.widget.CardView>
-            </LinearLayout>
-
-            <!-- Content Section -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <!-- Campus Network Header -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Campus Network"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#111827"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Online Count Card -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/onlineUsersCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFFFFF">
-
+                    <!-- Top Row: Greeting + Notification -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:padding="16dp"
-                        android:gravity="center_vertical">
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="20dp">
 
+                        <!-- Greeting Section -->
+                        <LinearLayout
+                            android:id="@+id/profile_section"
+                            android:layout_width="201dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvGreeting"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.85"
+                                android:text="Hi,"
+                                android:textColor="#FFFFFF"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                android:id="@+id/tvUserName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Username"
+                                android:textColor="#FFFFFF"
+                                android:textSize="26sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:alpha="0.9"
+                                android:text="Need anything delivered?"
+                                android:textColor="#E6FFFFFF"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <!-- Notification Icon -->
                         <androidx.cardview.widget.CardView
                             android:layout_width="48dp"
                             android:layout_height="48dp"
-                            app:cardCornerRadius="12dp"
+                            app:cardCornerRadius="24dp"
                             app:cardElevation="0dp"
-                            app:cardBackgroundColor="#E0F2F1">
+                            app:cardBackgroundColor="#0F766E">
 
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="center"
-                                android:src="@drawable/ic_profile"
-                                app:tint="#14B8A6" />
+                                android:id="@+id/notification"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="12dp"
+                                android:src="@drawable/ic_noti"
+                                android:contentDescription="Notifications"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                app:tint="#FFFFFF" />
                         </androidx.cardview.widget.CardView>
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="12dp"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tvOnlineUsers"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="24"
-                                android:textSize="22sp"
-                                android:textStyle="bold"
-                                android:textColor="#111827" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Deliverers online"
-                                android:textSize="12sp"
-                                android:textColor="#6B7280"
-                                android:layout_marginTop="2dp" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:background="@drawable/bg_input_rounded"
-                            android:backgroundTint="#E0F2F1"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="10dp"
-                            android:paddingTop="6dp"
-                            android:paddingBottom="6dp">
-
-                            <View
-                                android:id="@+id/liveIndicator"
-                                android:layout_width="6dp"
-                                android:layout_height="6dp"
-                                android:background="@drawable/round_white_bg"
-                                android:backgroundTint="#14B8A6" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Live"
-                                android:textSize="11sp"
-                                android:textStyle="bold"
-                                android:textColor="#14B8A6"
-                                android:layout_marginStart="5dp" />
-                        </LinearLayout>
                     </LinearLayout>
-                </androidx.cardview.widget.CardView>
 
-                <!-- Map Card -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/mapCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="240dp"
-                    android:layout_marginBottom="24dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFFFFF">
-
-                    <org.maplibre.android.maps.MapView
-                        android:id="@+id/mapView"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-                </androidx.cardview.widget.CardView>
-
-                <!-- Active Requests Header -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Active Requests"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#111827"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- Request Card 1 -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFFFFF">
-
-                    <LinearLayout
+                    <!-- Request Delivery Button -->
+                    <androidx.cardview.widget.CardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="16dp"
-                        android:gravity="center_vertical">
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#FFA726">
 
-                        <LinearLayout
-                            android:layout_width="0dp"
+                        <Button
+                            android:id="@+id/btnOrderNow"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Notebook"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                android:textColor="#111827" />
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:gravity="center_vertical"
-                                android:layout_marginTop="6dp">
-
-                                <ImageView
-                                    android:layout_width="14dp"
-                                    android:layout_height="14dp"
-                                    android:src="@drawable/ic_map_pin"
-                                    app:tint="#6B7280" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Stationery Shop"
-                                    android:textSize="13sp"
-                                    android:textColor="#6B7280"
-                                    android:layout_marginStart="5dp" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal"
-                                android:gravity="center_vertical"
-                                android:layout_marginTop="4dp">
-
-                                <ImageView
-                                    android:layout_width="14dp"
-                                    android:layout_height="14dp"
-                                    android:src="@drawable/ic_map_pin"
-                                    app:tint="#14B8A6" />
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Hostel C"
-                                    android:textSize="13sp"
-                                    android:textColor="#6B7280"
-                                    android:layout_marginStart="5dp" />
-                            </LinearLayout>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="View →"
-                            android:textColor="#14B8A6"
+                            android:text="Request Delivery"
+                            android:textColor="#FFFFFF"
                             android:textStyle="bold"
-                            android:textSize="14sp"
-                            android:paddingStart="12dp"
-                            android:paddingEnd="4dp"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?attr/selectableItemBackgroundBorderless" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                            android:textSize="16sp"
+                            android:padding="16dp"
+                            android:background="@android:color/transparent"
+                            android:textAllCaps="false" />
+                    </androidx.cardview.widget.CardView>
+                </LinearLayout>
 
-                <!-- Request Card 2 -->
-                <androidx.cardview.widget.CardView
+                <!-- Content Section -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
-                    app:cardBackgroundColor="#FFFFFF">
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
 
-                    <LinearLayout
+                    <!-- Campus Network Header -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Campus Network"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#111827"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Online Count Card -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/onlineUsersCard"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:padding="16dp"
-                        android:gravity="center_vertical">
+                        android:layout_marginBottom="16dp"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#FFFFFF">
 
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
+                        <ViewSwitcher
+                            android:id="@+id/onlineUsersSwitcher"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Lunch"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                android:textColor="#111827" />
-
+                            <!-- Shimmer Placeholder -->
                             <LinearLayout
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:orientation="horizontal"
-                                android:gravity="center_vertical"
-                                android:layout_marginTop="6dp">
+                                android:padding="16dp"
+                                android:gravity="center_vertical">
 
-                                <ImageView
-                                    android:layout_width="14dp"
-                                    android:layout_height="14dp"
-                                    android:src="@drawable/ic_map_pin"
-                                    app:tint="#6B7280" />
+                                <com.facebook.shimmer.ShimmerFrameLayout
+                                    android:layout_width="48dp"
+                                    android:layout_height="48dp"
+                                    app:shimmer_shape="radial">
 
-                                <TextView
+                                    <View
+                                        android:layout_width="48dp"
+                                        android:layout_height="48dp"
+                                        android:background="@drawable/bg_input_rounded"
+                                        android:backgroundTint="#E0F2F1" />
+                                </com.facebook.shimmer.ShimmerFrameLayout>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="12dp"
+                                    android:orientation="vertical">
+
+                                    <com.facebook.shimmer.ShimmerFrameLayout
+                                        android:layout_width="80dp"
+                                        android:layout_height="24dp"
+                                        app:shimmer_shape="radial">
+                                        <View
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:background="@drawable/bg_input_rounded"
+                                            android:backgroundTint="#E0F2F1" />
+                                    </com.facebook.shimmer.ShimmerFrameLayout>
+
+                                    <com.facebook.shimmer.ShimmerFrameLayout
+                                        android:layout_width="120dp"
+                                        android:layout_height="14dp"
+                                        android:layout_marginTop="4dp"
+                                        app:shimmer_shape="radial">
+                                        <View
+                                            android:layout_width="match_parent"
+                                            android:layout_height="match_parent"
+                                            android:background="@drawable/bg_input_rounded"
+                                            android:backgroundTint="#E0F2F1" />
+                                    </com.facebook.shimmer.ShimmerFrameLayout>
+                                </LinearLayout>
+
+                                <com.facebook.shimmer.ShimmerFrameLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Canteen"
-                                    android:textSize="13sp"
-                                    android:textColor="#6B7280"
-                                    android:layout_marginStart="5dp" />
+                                    android:paddingStart="10dp"
+                                    android:paddingEnd="10dp"
+                                    android:paddingTop="6dp"
+                                    android:paddingBottom="6dp"
+                                    app:shimmer_shape="radial">
+                                    <LinearLayout
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical"
+                                        android:background="@drawable/bg_input_rounded"
+                                        android:backgroundTint="#E0F2F1"
+                                        android:paddingStart="10dp"
+                                        android:paddingEnd="10dp"
+                                        android:paddingTop="6dp"
+                                        android:paddingBottom="6dp">
+                                        <View
+                                            android:layout_width="6dp"
+                                            android:layout_height="6dp"
+                                            android:background="@drawable/round_white_bg" />
+                                        <View
+                                            android:layout_width="30dp"
+                                            android:layout_height="12dp"
+                                            android:layout_marginStart="5dp"
+                                            android:background="@drawable/bg_input_rounded"
+                                            android:backgroundTint="#E0F2F1" />
+                                    </LinearLayout>
+                                </com.facebook.shimmer.ShimmerFrameLayout>
                             </LinearLayout>
 
+                            <!-- Real Content (original layout) -->
                             <LinearLayout
-                                android:layout_width="wrap_content"
+                                android:id="@+id/onlineContent"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:orientation="horizontal"
-                                android:gravity="center_vertical"
-                                android:layout_marginTop="4dp">
+                                android:padding="16dp"
+                                android:gravity="center_vertical">
 
-                                <ImageView
-                                    android:layout_width="14dp"
-                                    android:layout_height="14dp"
-                                    android:src="@drawable/ic_map_pin"
-                                    app:tint="#14B8A6" />
+                                <androidx.cardview.widget.CardView
+                                    android:layout_width="48dp"
+                                    android:layout_height="48dp"
+                                    app:cardCornerRadius="12dp"
+                                    app:cardElevation="0dp"
+                                    app:cardBackgroundColor="#E0F2F1">
 
-                                <TextView
+                                    <ImageView
+                                        android:layout_width="24dp"
+                                        android:layout_height="24dp"
+                                        android:layout_gravity="center"
+                                        android:src="@drawable/ic_profile"
+                                        app:tint="#14B8A6" />
+                                </androidx.cardview.widget.CardView>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:layout_marginStart="12dp"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvOnlineUsers"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="24"
+                                        android:textSize="22sp"
+                                        android:textStyle="bold"
+                                        android:textColor="#111827" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Users online"
+                                        android:textSize="12sp"
+                                        android:textColor="#6B7280"
+                                        android:layout_marginTop="2dp" />
+                                </LinearLayout>
+
+                                <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Hostel B"
-                                    android:textSize="13sp"
-                                    android:textColor="#6B7280"
-                                    android:layout_marginStart="5dp" />
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical"
+                                    android:background="@drawable/bg_input_rounded"
+                                    android:backgroundTint="#E0F2F1"
+                                    android:paddingStart="10dp"
+                                    android:paddingEnd="10dp"
+                                    android:paddingTop="6dp"
+                                    android:paddingBottom="6dp">
+
+                                    <View
+                                        android:id="@+id/liveIndicator"
+                                        android:layout_width="6dp"
+                                        android:layout_height="6dp"
+                                        android:background="@drawable/round_white_bg"
+                                        android:backgroundTint="#14B8A6" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Live"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold"
+                                        android:textColor="#14B8A6"
+                                        android:layout_marginStart="5dp" />
+                                </LinearLayout>
                             </LinearLayout>
-                        </LinearLayout>
+                        </ViewSwitcher>
+                    </androidx.cardview.widget.CardView>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="View →"
-                            android:textColor="#14B8A6"
-                            android:textStyle="bold"
-                            android:textSize="14sp"
-                            android:paddingStart="12dp"
-                            android:paddingEnd="4dp"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="8dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:background="?attr/selectableItemBackgroundBorderless" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                    <!-- Active Requests Header -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Active Requests"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#111827"
+                        android:layout_marginBottom="12dp" />
 
-                <!-- Spacing for floating nav -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="80dp" />
+                    <!-- Dynamic container for active request cards -->
+                    <LinearLayout
+                        android:id="@+id/activeRequestsContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <!-- Spacing for floating nav -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="80dp" />
+                </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
-    </ScrollView>
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Floating Bottom Navigation Bar -->
     <androidx.cardview.widget.CardView

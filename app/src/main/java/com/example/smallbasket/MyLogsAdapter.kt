@@ -4,13 +4,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.smallbasket.models.Order
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.smallbasket.utils.TimeUtils
 
 class MyLogsAdapter(
-    private var orders: List<Order>
+    private var orders: List<Order>,
+    private val onItemClick: (Order) -> Unit = {}
 ) : RecyclerView.Adapter<MyLogsAdapter.LogViewHolder>() {
 
     inner class LogViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -32,36 +33,37 @@ class MyLogsAdapter(
         val order = orders[position]
 
         holder.tvItems.text = order.items.joinToString(", ")
-        holder.tvPickup.text = "From: ${order.pickupArea}"
-        holder.tvDrop.text = "To: ${order.dropArea}"
-        holder.tvReward.text = "Reward: ${order.rewardPercentage}%"
+
+        // Safely display pickup/drop areas
+        holder.tvPickup.text = "From: ${order.pickupArea ?: "Unknown"}"
+        holder.tvDrop.text = "To: ${order.dropArea ?: "Unknown"}"
+
+        // ✅ Use 'reward' (from backend) instead of 'rewardPercentage'
+        // Fallback to 0 if null or invalid
+        val rewardAmount = runCatching {
+            (order.reward ?: 0.0).toInt()
+        }.getOrDefault(0)
+        holder.tvReward.text = "Reward: ₹$rewardAmount"
 
         // Format status with color
-        val statusText = order.status.uppercase()
-        holder.tvStatus.text = statusText
-        when (order.status.lowercase()) {
-            "open" -> {
-                holder.tvStatus.setTextColor(holder.itemView.context.getColor(android.R.color.holo_orange_dark))
-            }
-            "accepted" -> {
-                holder.tvStatus.setTextColor(holder.itemView.context.getColor(android.R.color.holo_blue_dark))
-            }
-            "completed" -> {
-                holder.tvStatus.setTextColor(holder.itemView.context.getColor(android.R.color.holo_green_dark))
-            }
-            "cancelled" -> {
-                holder.tvStatus.setTextColor(holder.itemView.context.getColor(android.R.color.holo_red_dark))
-            }
+        val status = order.status?.lowercase() ?: "unknown"
+        holder.tvStatus.text = status.replaceFirstChar { it.uppercase() }
+
+        val color = when (status) {
+            "open" -> android.R.color.holo_orange_dark
+            "accepted" -> android.R.color.holo_blue_dark
+            "completed" -> android.R.color.holo_green_dark
+            "cancelled" -> android.R.color.holo_red_dark
+            else -> android.R.color.darker_gray
         }
+        holder.tvStatus.setTextColor(ContextCompat.getColor(holder.itemView.context, color))
 
         // Format date
-        try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-            val date = inputFormat.parse(order.createdAt)
-            holder.tvDate.text = date?.let { outputFormat.format(it) } ?: order.createdAt
-        } catch (e: Exception) {
-            holder.tvDate.text = order.createdAt
+        holder.tvDate.text = order.createdAt?.let { TimeUtils.formatDateTime(it) } ?: "Unknown"
+
+        // Click listener
+        holder.itemView.setOnClickListener {
+            onItemClick(order)
         }
     }
 

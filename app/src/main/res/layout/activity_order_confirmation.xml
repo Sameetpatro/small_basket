@@ -4,124 +4,411 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#F9FAFB"
     android:fillViewport="true"
-    android:background="#FFF3E0" tools:context=".OrderConfirmationActivity">
+    tools:context=".OrderConfirmationActivity">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingBottom="32dp">
 
-        <TextView
-            android:id="@+id/tvThankYou"
+        <!-- Gradient Header -->
+        <LinearLayout
+            android:id="@+id/headerCard"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Thank you for your order, @username!"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#333333"
-            android:gravity="center"
-            android:padding="16dp"
-            android:background="@drawable/bg_header_thanks"
-            android:layout_marginBottom="20dp"
-            android:elevation="4dp" />
+            android:layout_height="140dp"
+            android:background="@drawable/bg_teal_gradient"
+            android:elevation="4dp"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingTop="48dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="24dp"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <androidx.cardview.widget.CardView
+            <!-- Back Button and Title Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/btnBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:contentDescription="Back"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="#FFFFFF" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvThankYou"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Thank you for The Order"
+                        android:textColor="#FFFFFF"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.9"
+                        android:text="Review your order details below"
+                        android:textColor="#E6FFFFFF"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Order Items Card -->
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardOrderItems"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:elevation="8dp"
-            app:cardCornerRadius="18dp"
-            app:cardBackgroundColor="@android:color/white">
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/headerCard">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="20dp">
 
                 <TextView
-                    android:id="@+id/tvOrderItemsTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
                     android:text="Your Order Items"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#FF9800" android:layout_marginBottom="12dp" />
+                    android:textColor="#6B7280"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <!-- Sample Item -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Items"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"/>
 
                 <LinearLayout
-                    android:id="@+id/layoutOrderItems"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:divider="@drawable/divider_orange_thin"
-                    android:showDividers="middle">
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:layout_marginBottom="16dp">
 
                     <TextView
                         android:id="@+id/tvSampleItem"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="• 2x Apples"
-                        android:textSize="16sp"
-                        android:textColor="#616161"
-                        android:paddingVertical="8dp" />
+                        android:text="2x Apples"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <!-- Pickup Location -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pickup Location"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/tvOrderPickup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Location"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <!-- Drop Location -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Drop Location"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/tvOrderDrop"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Location"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <!-- Priority (conditional) -->
+                <TextView
+                    android:id="@+id/labelPriority"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Priority"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone"/>
+
+                <LinearLayout
+                    android:id="@+id/layoutPriority"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/dasa_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:layout_marginBottom="16dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvPriority"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⚡ High Priority"
+                        android:textColor="#EF4444"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <!-- Notes (conditional) -->
+                <TextView
+                    android:id="@+id/labelNotes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notes"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone"/>
+
+                <LinearLayout
+                    android:id="@+id/layoutNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvNotes"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sample notes"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
                 </LinearLayout>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <EditText
-            android:id="@+id/etExpectedPrice"
-            android:layout_width="match_parent"
+        <!-- Price Breakdown Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardPriceBreakdown"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="Enter expected total price"
-            android:inputType="numberDecimal"
-            android:padding="14dp"
-            android:background="@drawable/et_background_modern"
-            android:textColor="#333333"
-            android:textSize="16sp"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardOrderItems">
 
-        <Button
-            android:id="@+id/btnSubmitPrice"
-            android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="Price Breakdown"
+                    android:textColor="#6B7280"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <!-- Item Price -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Item Price"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/tvItemPrice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="₹0.00"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <!-- Delivery Fee -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Delivery Fee (10%)"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/tvDeliveryFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="₹0.00"
+                        android:textColor="#111827"
+                        android:textSize="15sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E5E7EB"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Total Amount - Highlighted -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Amount"
+                    android:textColor="#9CA3AF"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/info_field_bg"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp">
+
+                    <TextView
+                        android:id="@+id/tvTotalAmount"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="₹0.00"
+                        android:textColor="#14B8A6"
+                        android:textSize="24sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Confirm Order Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirmOrder"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Confirm Price"
-            android:textAllCaps="false"
-            android:textSize="18sp"
-            android:backgroundTint="#FFB300"
-            android:textColor="@android:color/white"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="#14B8A6"
             android:paddingVertical="14dp"
-            android:layout_marginBottom="30dp"
-            android:elevation="6dp"
-            android:stateListAnimator="@null" />
-
-        <TextView
-            android:id="@+id/tvFinalPrice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Final Price: $0.00"
-            android:textColor="#E65100"
-            android:textSize="20sp"
+            android:text="Confirm Order"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
             android:textStyle="bold"
-            android:gravity="center"
-            android:visibility="gone"
-            android:layout_marginTop="20dp" />
+            app:cornerRadius="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardPriceBreakdown" />
 
-        <Button
-            android:id="@+id/btnReturnHome"
-            android:layout_width="match_parent"
+        <!-- Back to Edit Button (Outlined) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackToEdit"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Return to Home"
-            android:textAllCaps="false"
-            android:textSize="18sp"
-            android:backgroundTint="#FF6F00" android:textColor="@android:color/white"
-            android:elevation="5dp"
-            android:visibility="gone"
-            android:layout_marginTop="20dp"
+            android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#FFFFFF"
             android:paddingVertical="14dp"
-            android:stateListAnimator="@null" />
+            android:text="Back to Edit"
+            android:textAllCaps="false"
+            android:textColor="#14B8A6"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="16dp"
+            app:strokeColor="#14B8A6"
+            app:strokeWidth="2dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnConfirmOrder" />
 
-    </LinearLayout>
+        <!-- Footer -->
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

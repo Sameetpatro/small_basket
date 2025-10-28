@@ -1,3 +1,4 @@
+<!-- res/values/strings.xml -->
 <resources>
     <string name="app_name">Small Basket</string>
     <string name="no_data">Not Signed In</string>
@@ -17,18 +18,37 @@
     <string name="get_started">Get Started</string>
     <string name="logo">Logo</string>
 
+    <!-- Request Activity Messages -->
+    <string name="error_no_internet">No internet connection. Please check your network and try again.</string>
+    <string name="error_permission_denied">You don’t have permission to view delivery requests.</string>
+    <string name="error_timeout">The request took too long. Please try again.</string>
+    <string name="error_service_unavailable">We’re having trouble loading requests right now. Please try again later.</string>
+    <string name="error_session_expired">Your session has expired. Please log in again.</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="empty_no_requests">No pending delivery requests at the moment.</string>
+
+    <!-- Notification Channels -->
+    <string name="default_notification_channel_id">smallbasket_default</string>
+    <string name="order_updates_channel_id">order_updates</string>
+    <string name="order_updates_channel_name">Order Updates</string>
+    <string name="order_updates_channel_description">Get notified about your order status</string>
+
+    <string name="delivery_updates_channel_id">delivery_updates</string>
+    <string name="delivery_updates_channel_name">Delivery Updates</string>
+    <string name="delivery_updates_channel_description">Updates about deliveries you\'re handling</string>
+
+    <string name="promotional_channel_id">promotional</string>
+    <string name="promotional_channel_name">Promotional</string>
+    <string name="promotional_channel_description">Special offers and reminders</string>
+
     <!-- Updated to match backend areas.py PREDEFINED_AREAS -->
     <string-array name="location_areas">
         <item>Select Location Area</item>
         <item>SBIT</item>
-        <item>CECT</item>
         <item>Pallri</item>
         <item>Bahalgarh</item>
         <item>Sonepat</item>
         <item>TDI</item>
-        <item>Lakegroove</item>
-        <item>KingsBurry</item>
-        <item>SuperMax</item>
     </string-array>
 
     <string-array name="time_presets">
@@ -38,5 +58,4 @@
         <item>2 hr</item>
         <item>Custom (Hrs &amp; Mins)</item>
     </string-array>
-
 </resources>

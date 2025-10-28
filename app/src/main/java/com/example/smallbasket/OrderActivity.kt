@@ -1,12 +1,17 @@
 package com.example.smallbasket
 
 import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.view.View
 import android.view.WindowInsetsController
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -26,33 +31,114 @@ class OrderActivity : AppCompatActivity() {
     private val auth = FirebaseAuth.getInstance()
     private var selectedDeadline = "30m"
     private var customDeadlineMinutes: Int? = null
+    private lateinit var vibrator: Vibrator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Setup transparent status bar BEFORE enableEdgeToEdge
         setupStatusBar()
-
         enableEdgeToEdge()
 
         binding = ActivityOrderBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Initialize vibrator for haptic feedback
+        vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
         setupBackButton()
         setupDeadlineButtons()
         setupListeners()
-
-        // Setup scroll listener to change status bar color
         setupScrollListener()
+
+        // Restore state if coming back from confirmation screen
+        restoreState()
+    }
+
+    private fun restoreState() {
+        // Get data from Intent (if returning from OrderConfirmationActivity)
+        val item = intent.getStringExtra("item")
+        val pickup = intent.getStringExtra("pickup")
+        val pickupArea = intent.getStringExtra("pickup_area")
+        val drop = intent.getStringExtra("drop")
+        val dropArea = intent.getStringExtra("drop_area")
+        val itemPrice = intent.getDoubleExtra("item_price", 0.0)
+        val deadline = intent.getStringExtra("deadline")
+        val customMinutes = intent.getIntExtra("custom_deadline_minutes", -1)
+        val priority = intent.getBooleanExtra("priority", false)
+        val notes = intent.getStringExtra("notes")
+
+        // Restore fields if data exists
+        if (item != null) {
+            binding.item.setText(item)
+        }
+
+        if (pickup != null) {
+            binding.pickup.setText(pickup)
+        }
+
+        if (pickupArea != null) {
+            val pickupAdapter = ArrayAdapter.createFromResource(
+                this,
+                R.array.pickup_areas,
+                android.R.layout.simple_spinner_item
+            )
+            val pickupPosition = pickupAdapter.getPosition(pickupArea)
+            if (pickupPosition >= 0) {
+                binding.pickupArea.setSelection(pickupPosition)
+            }
+        }
+
+        if (drop != null) {
+            binding.drop.setText(drop)
+        }
+
+        if (dropArea != null) {
+            val dropAdapter = ArrayAdapter.createFromResource(
+                this,
+                R.array.drop_areas,
+                android.R.layout.simple_spinner_item
+            )
+            val dropPosition = dropAdapter.getPosition(dropArea)
+            if (dropPosition >= 0) {
+                binding.dropArea.setSelection(dropPosition)
+            }
+        }
+
+        if (itemPrice > 0.0) {
+            binding.fare.setText(itemPrice.toString())
+        }
+
+        if (deadline != null) {
+            selectedDeadline = deadline
+            if (deadline == "custom" && customMinutes != -1) {
+                customDeadlineMinutes = customMinutes
+                // Calculate and show the custom time
+                val calendar = Calendar.getInstance()
+                calendar.add(Calendar.MINUTE, customMinutes)
+                val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+                val formattedTime = timeFormat.format(calendar.time)
+                binding.tvCustomTime.visibility = View.VISIBLE
+                binding.tvCustomTime.text = "Expires at $formattedTime"
+            }
+            updateDeadlineButton(deadline)
+        }
+
+        binding.priority.isChecked = priority
+
+        if (notes != null) {
+            binding.notes.setText(notes)
+        }
     }
 
     private fun setupStatusBar() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             window.apply {
-                // Make status bar transparent
                 statusBarColor = Color.TRANSPARENT
-
-                // Allow content to draw behind status bar
                 @Suppress("DEPRECATION")
                 decorView.systemUiVisibility = (
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -61,15 +147,12 @@ class OrderActivity : AppCompatActivity() {
             }
         }
 
-        // Set white icons for teal background
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // For Android 11+ - Remove light status bar to get white icons
             window.insetsController?.setSystemBarsAppearance(
                 0,
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
             )
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // For Android 6.0-10 - Ensure light status bar flag is NOT set (for white icons)
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility =
                 window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
@@ -78,10 +161,7 @@ class OrderActivity : AppCompatActivity() {
 
     private fun setupScrollListener() {
         binding.scrollView.setOnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
-            // Change status bar appearance based on scroll position
-            // When scrolled past the header (e.g., 140px - height of header), change to light icons
             if (scrollY > 140) {
-                // Scrolled down - use dark icons for light background
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     window.insetsController?.setSystemBarsAppearance(
                         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
@@ -93,7 +173,6 @@ class OrderActivity : AppCompatActivity() {
                         window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 }
             } else {
-                // At top - use white icons for teal background
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     window.insetsController?.setSystemBarsAppearance(
                         0,
@@ -110,15 +189,18 @@ class OrderActivity : AppCompatActivity() {
 
     private fun setupBackButton() {
         binding.btnBack.setOnClickListener {
+            // Medium Haptic for navigation action
+            performMediumHaptic()
             finish()
         }
     }
 
     private fun setupDeadlineButtons() {
-        // Set default selection
         updateDeadlineButton("30m")
 
         binding.deadline30m.setOnClickListener {
+            // Light Haptic for selection toggle
+            performLightHaptic()
             selectedDeadline = "30m"
             customDeadlineMinutes = null
             binding.tvCustomTime.visibility = View.GONE
@@ -126,6 +208,7 @@ class OrderActivity : AppCompatActivity() {
         }
 
         binding.deadline1h.setOnClickListener {
+            performLightHaptic()
             selectedDeadline = "1h"
             customDeadlineMinutes = null
             binding.tvCustomTime.visibility = View.GONE
@@ -133,6 +216,7 @@ class OrderActivity : AppCompatActivity() {
         }
 
         binding.deadline2h.setOnClickListener {
+            performLightHaptic()
             selectedDeadline = "2h"
             customDeadlineMinutes = null
             binding.tvCustomTime.visibility = View.GONE
@@ -140,6 +224,7 @@ class OrderActivity : AppCompatActivity() {
         }
 
         binding.deadline4h.setOnClickListener {
+            performLightHaptic()
             selectedDeadline = "4h"
             customDeadlineMinutes = null
             binding.tvCustomTime.visibility = View.GONE
@@ -147,18 +232,27 @@ class OrderActivity : AppCompatActivity() {
         }
 
         binding.deadlineCustom.setOnClickListener {
+            // Light Haptic when opening picker
+            performLightHaptic()
             showCustomTimePicker()
+        }
+
+        // Priority toggle haptic
+        binding.priority.setOnCheckedChangeListener { _, isChecked ->
+            // Medium Haptic for important toggle (priority affects order)
+            performMediumHaptic()
         }
     }
 
     private fun showCustomTimePicker() {
         val calendar = Calendar.getInstance()
 
-        // Create TimePickerDialog
         val timePickerDialog = TimePickerDialog(
             this,
             { _, hourOfDay, minute ->
-                // Calculate time difference
+                // Light Haptic when time is selected
+                performLightHaptic()
+
                 val currentCalendar = Calendar.getInstance()
                 val selectedCalendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, hourOfDay)
@@ -167,17 +261,16 @@ class OrderActivity : AppCompatActivity() {
                     set(Calendar.MILLISECOND, 0)
                 }
 
-                // If selected time is before current time, assume next day
                 if (selectedCalendar.timeInMillis <= currentCalendar.timeInMillis) {
                     selectedCalendar.add(Calendar.DAY_OF_MONTH, 1)
                 }
 
-                // Calculate difference in minutes
                 val diffInMillis = selectedCalendar.timeInMillis - currentCalendar.timeInMillis
                 val diffInMinutes = (diffInMillis / (1000 * 60)).toInt()
 
-                // Validate minimum time (at least 10 minutes)
                 if (diffInMinutes < 10) {
+                    // Medium Haptic for error feedback
+                    performMediumHaptic()
                     Toast.makeText(
                         this,
                         "Please select a time at least 10 minutes from now",
@@ -186,24 +279,20 @@ class OrderActivity : AppCompatActivity() {
                     return@TimePickerDialog
                 }
 
-                // Format the time
                 val timeFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
                 val formattedTime = timeFormat.format(selectedCalendar.time)
 
-                // Update custom time display
                 binding.tvCustomTime.visibility = View.VISIBLE
                 binding.tvCustomTime.text = "Expires at $formattedTime"
 
-                // Store the deadline
                 selectedDeadline = "custom"
                 customDeadlineMinutes = diffInMinutes
 
-                // Update button states
                 updateDeadlineButton("custom")
             },
             calendar.get(Calendar.HOUR_OF_DAY),
             calendar.get(Calendar.MINUTE),
-            false // Use 12-hour format
+            false
         )
 
         timePickerDialog.setTitle("Select expiry time")
@@ -211,7 +300,6 @@ class OrderActivity : AppCompatActivity() {
     }
 
     private fun updateDeadlineButton(selected: String) {
-        // Reset all buttons to outline style
         binding.deadline30m.setBackgroundResource(R.drawable.bg_button_outline)
         binding.deadline30m.setTextColor(resources.getColor(android.R.color.black, null))
 
@@ -227,7 +315,6 @@ class OrderActivity : AppCompatActivity() {
         binding.deadlineCustom.setBackgroundResource(R.drawable.bg_button_outline)
         binding.deadlineCustom.setTextColor(resources.getColor(android.R.color.black, null))
 
-        // Set selected button to teal style
         when (selected) {
             "30m" -> {
                 binding.deadline30m.setBackgroundResource(R.drawable.bg_button_teal)
@@ -265,7 +352,7 @@ class OrderActivity : AppCompatActivity() {
             val pickupArea = binding.pickupArea.selectedItem?.toString() ?: ""
             val drop = binding.drop.text.toString().trim()
             val dropArea = binding.dropArea.selectedItem?.toString() ?: ""
-            val fareText = binding.fare.text.toString().trim()
+            val priceText = binding.fare.text.toString().trim()
             val priority = binding.priority.isChecked
             val notes = binding.notes.text.toString().trim()
 
@@ -273,6 +360,7 @@ class OrderActivity : AppCompatActivity() {
             var hasError = false
 
             if (item.isEmpty()) {
+                performMediumHaptic()
                 Toast.makeText(this, "Item name is required", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
@@ -289,103 +377,89 @@ class OrderActivity : AppCompatActivity() {
                 hasError = true
             }
 
-            // Validate fare if entered
-            var fare = 0.0
-            if (fareText.isNotEmpty()) {
+            // Validate price (REQUIRED now)
+            if (priceText.isEmpty()) {
+                binding.fareError.text = "Item price is required"
+                binding.fareError.visibility = View.VISIBLE
+                hasError = true
+            }
+
+            var itemPrice = 0.0
+            if (priceText.isNotEmpty()) {
                 try {
-                    fare = fareText.toDouble()
-                    if (fare < 0) {
-                        binding.fareError.text = "Please enter a valid amount"
+                    itemPrice = priceText.toDouble()
+                    if (itemPrice <= 0) {
+                        binding.fareError.text = "Please enter a valid price"
                         binding.fareError.visibility = View.VISIBLE
                         hasError = true
                     }
                 } catch (e: NumberFormatException) {
-                    binding.fareError.text = "Please enter a valid amount"
+                    binding.fareError.text = "Please enter a valid price"
                     binding.fareError.visibility = View.VISIBLE
                     hasError = true
                 }
             }
 
             if (hasError) {
+                // Medium Haptic for validation failure
+                performMediumHaptic()
                 return@setOnClickListener
             }
 
-            // Convert deadline to ISO 8601
-            val deadline = convertDeadlineToISO8601(selectedDeadline, customDeadlineMinutes)
-            val timeRequested = deadline // Using same time for both
+            // Medium Haptic for successful form submission
+            performMediumHaptic()
 
-            // Create order request with single item
-            val orderRequest = CreateOrderRequest(
-                item = listOf(item),
-                pickupLocation = pickup,
-                pickupArea = pickupArea,
-                dropLocation = drop,
-                dropArea = dropArea,
-                reward = fare,
-                timeRequested = timeRequested,
-                deadline = deadline,
-                priority = priority,
-                notes = notes.ifEmpty { null }
+            // Navigate to confirmation screen with all data
+            val intent = Intent(this, OrderConfirmationActivity::class.java)
+            intent.putExtra("username", auth.currentUser?.displayName ?: "User")
+            intent.putExtra("item", item)
+            intent.putExtra("pickup", pickup)
+            intent.putExtra("pickup_area", pickupArea)
+            intent.putExtra("drop", drop)
+            intent.putExtra("drop_area", dropArea)
+            intent.putExtra("item_price", itemPrice)
+            intent.putExtra("deadline", selectedDeadline)
+            intent.putExtra("custom_deadline_minutes", customDeadlineMinutes)
+            intent.putExtra("priority", priority)
+            intent.putExtra("notes", notes)
+            startActivity(intent)
+            finish()
+        }
+    }
+
+    // ==================== HAPTIC FEEDBACK METHODS ====================
+
+    /**
+     * Light Haptic: 10ms duration, 40% amplitude
+     * Used for: Deadline button selections, time picker interactions
+     */
+    private fun performLightHaptic() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val effect = VibrationEffect.createOneShot(
+                10,  // 10ms duration
+                102  // ~40% amplitude (40% of 255 = 102)
             )
-
-            createOrder(orderRequest, listOf(item))
+            vibrator.vibrate(effect)
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(10)
         }
     }
 
-    private fun convertDeadlineToISO8601(deadline: String, customMinutes: Int?): String {
-        val calendar = Calendar.getInstance()
-
-        when (deadline) {
-            "30m" -> calendar.add(Calendar.MINUTE, 30)
-            "1h" -> calendar.add(Calendar.HOUR_OF_DAY, 1)
-            "2h" -> calendar.add(Calendar.HOUR_OF_DAY, 2)
-            "4h" -> calendar.add(Calendar.HOUR_OF_DAY, 4)
-            "custom" -> {
-                if (customMinutes != null) {
-                    calendar.add(Calendar.MINUTE, customMinutes)
-                } else {
-                    calendar.add(Calendar.MINUTE, 30) // Default fallback
-                }
-            }
-        }
-
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
-        sdf.timeZone = TimeZone.getTimeZone("UTC")
-        return sdf.format(calendar.time)
-    }
-
-    private fun createOrder(request: CreateOrderRequest, itemList: List<String>) {
-        binding.btnPlaceNow.isEnabled = false
-        binding.btnPlaceNow.text = "Posting..."
-
-        lifecycleScope.launch {
-            val result = repository.createOrder(request)
-
-            result.onSuccess { order ->
-                Toast.makeText(
-                    this@OrderActivity,
-                    "Order created successfully!",
-                    Toast.LENGTH_SHORT
-                ).show()
-
-                val username = intent.getStringExtra("username")
-                val intent = Intent(this@OrderActivity, OrderConfirmationActivity::class.java)
-                intent.putExtra("username", username)
-                intent.putExtra("order_items", itemList.joinToString(","))
-                intent.putExtra("order_id", order.id)
-                startActivity(intent)
-                finish()
-            }
-
-            result.onFailure { error ->
-                Toast.makeText(
-                    this@OrderActivity,
-                    "Error: ${error.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-                binding.btnPlaceNow.isEnabled = true
-                binding.btnPlaceNow.text = "Post Request"
-            }
+    /**
+     * Medium Haptic: 15ms duration, 80% amplitude
+     * Used for: Back button, priority toggle, form submission, errors
+     */
+    private fun performMediumHaptic() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val effect = VibrationEffect.createOneShot(
+                15,  // 15ms duration
+                204  // ~80% amplitude (80% of 255 = 204)
+            )
+            vibrator.vibrate(effect)
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(15)
         }
     }
 }

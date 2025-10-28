@@ -1,6 +1,7 @@
 package com.example.smallbasket.api
 
 import com.example.smallbasket.models.*
+import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -50,7 +51,9 @@ interface ApiService {
     // ============================================
 
     @POST("user/connectivity/update")
-    suspend fun updateConnectivity(@Body request: ConnectivityUpdateRequest): Response<SuccessResponse>
+    suspend fun updateConnectivity(
+        @Body request: ConnectivityUpdateRequest
+    ): Response<SuccessResponse>
 
     // ============================================
     // AREA ENDPOINTS
@@ -78,4 +81,85 @@ interface ApiService {
 
     @GET("/")
     suspend fun healthCheck(): Response<Map<String, Any>>
+
+    // LOCATION/MAP ENDPOINTS
+    // ============================================
+
+    /**
+     * Get nearby users within specified radius
+     */
+    @POST("location/nearby-users")
+    suspend fun getNearbyUsers(
+        @Body request: NearbyUsersRequest
+    ): Response<NearbyUsersResponse>
+
+    /**
+     * Get user's current GPS location
+     */
+    @GET("location/my-gps")
+    suspend fun getMyGPSLocation(): Response<MyGPSLocationResponse>
+
+    /**
+     * Get all users in a specific area
+     */
+    @GET("location/users-in-area/{area_name}")
+    suspend fun getUsersInArea(
+        @Path("area_name") areaName: String,
+        @Query("include_edge_users") includeEdgeUsers: Boolean = true
+    ): Response<UsersInAreaResponse>
+
+    /**
+     * Update user's GPS location
+     */
+    @POST("location/update-gps")
+    suspend fun updateGPSLocation(
+        @Body request: com.example.smallbasket.location.UpdateGPSLocationRequest
+    ): Response<UpdateGPSLocationResponse>
 }
+
+data class UpdateGPSLocationResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String,
+    @SerializedName("fast_mode") val fastMode: Boolean,
+    @SerializedName("data") val data: LocationUpdateData?
+)
+
+data class LocationUpdateData(
+    @SerializedName("primary_area") val primaryArea: String?,
+    @SerializedName("all_matching_areas") val allMatchingAreas: List<String>?,
+    @SerializedName("is_on_edge") val isOnEdge: Boolean?,
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double
+)
+
+// Request model for nearby users
+data class NearbyUsersRequest(
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double,
+    @SerializedName("radius_meters") val radiusMeters: Double
+)
+
+// Response model for my GPS location
+data class MyGPSLocationResponse(
+    @SerializedName("has_location") val hasLocation: Boolean,
+    @SerializedName("gps_location") val gpsLocation: GPSLocation?,
+    @SerializedName("primary_area") val primaryArea: String?,
+    @SerializedName("all_matching_areas") val allMatchingAreas: List<String>?,
+    @SerializedName("is_on_edge") val isOnEdge: Boolean?,
+    @SerializedName("nearby_areas") val nearbyAreas: List<String>?
+)
+
+data class GPSLocation(
+    @SerializedName("latitude") val latitude: Double,
+    @SerializedName("longitude") val longitude: Double,
+    @SerializedName("accuracy") val accuracy: Float?,
+    @SerializedName("last_updated") val lastUpdated: String?
+)
+
+// Response model for users in area
+data class UsersInAreaResponse(
+    @SerializedName("area") val area: String,
+    @SerializedName("total") val total: Int,
+    @SerializedName("include_edge_users") val includeEdgeUsers: Boolean,
+    @SerializedName("users") val users: List<MapUserData>
+)
